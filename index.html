@@ -70,19 +70,19 @@
             home: "Home", plan: "Food", shop: "Shop", tasks: "Tasks",
             today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned",
             shoppingList: "Shopping List", items: "items", allClear: "All clear!",
-            add: "Add", move: "Move", addItem: "Add item...", login: "Who are you?",
-            tasksHeader: "Tasks & Pets", general: "General Tasks", pets: "Koda & Cooper",
-            addTask: "New task...", assign: "Assign to", noTasks: "No active tasks",
-            readOnly: "View Only (Ask Maria/Mokka/Diddri to edit)"
+            add: "Add", login: "Who are you?", 
+            myTasks: "My Pending Tasks", noMyTasks: "You are free! No tasks.",
+            taskInput: "New task...", assign: "Assign to", by: "By", due: "Due",
+            types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets (Both)" }
         },
         no: {
             home: "Hjem", plan: "Mat", shop: "Handle", tasks: "Oppgaver",
             today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt",
             shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
-            add: "Legg til", move: "Flytt", addItem: "Legg til vare...", login: "Hvem er du?",
-            tasksHeader: "Oppgaver & Dyr", general: "Husarbeid", pets: "Koda & Cooper",
-            addTask: "Ny oppgave...", assign: "Ansvarlig", noTasks: "Ingen oppgaver",
-            readOnly: "Kun visning (Spør Maria/Mokka/Diddri for å endre)"
+            add: "Legg til", login: "Hvem er du?", 
+            myTasks: "Mine Oppgaver", noMyTasks: "Du er fri! Ingen oppgaver.",
+            taskInput: "Ny oppgave...", assign: "Ansvarlig", by: "Av", due: "Frist",
+            types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr (Begge)" }
         }
     };
 
@@ -99,8 +99,16 @@
         result.setDate(result.getDate() + days);
         return result;
     };
+    const getFriendlyDate = (dateStr, lang) => {
+        if(!dateStr) return "";
+        const today = formatDateKey(new Date());
+        if(dateStr === today) return lang === 'en' ? "Today" : "I dag";
+        const tomorrow = formatDateKey(addDays(new Date(), 1));
+        if(dateStr === tomorrow) return lang === 'en' ? "Tomorrow" : "I morgen";
+        return dateStr.substring(5).split('-').reverse().join('.');
+    }
 
-    // --- LOGIN SCREEN COMPONENT ---
+    // --- LOGIN SCREEN ---
     const LoginScreen = ({ onLogin, t }) => (
         <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 fade-in">
             <h1 className="text-white text-3xl font-bold mb-8">{t.login}</h1>
@@ -115,7 +123,7 @@
                     </button>
                 ))}
             </div>
-            <p className="text-slate-500 mt-10 text-xs">Samla v4.0 • Josefsen-Skeie</p>
+            <p className="text-slate-500 mt-10 text-xs">Samla v5.0 • Josefsen-Skeie</p>
         </div>
     );
 
@@ -135,20 +143,29 @@
         const [groceries, setGroceries] = useState([]);
         const [tasks, setTasks] = useState([]);
 
-        // Inputs
+        // Task Inputs
+        const [taskInput, setTaskInput] = useState("");
+        const [taskAssignee, setTaskAssignee] = useState("");
+        const [taskDate, setTaskDate] = useState(formatDateKey(new Date()));
+        const [taskType, setTaskType] = useState("house"); // house, koda, cooper, both
+        
+        // Grocery Inputs
         const [groceryInput, setGroceryInput] = useState("");
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
-        const [taskInput, setTaskInput] = useState("");
-        const [taskAssignee, setTaskAssignee] = useState(USERS[0].name);
-        const [isPetTask, setIsPetTask] = useState(false);
-        
+
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
 
         // --- FIREBASE ---
         useEffect(() => {
             const savedUser = localStorage.getItem('samla_user');
-            if (savedUser) setCurrentUser(JSON.parse(savedUser));
+            if (savedUser) {
+                const parsed = JSON.parse(savedUser);
+                setCurrentUser(parsed);
+                setTaskAssignee(parsed.name);
+            } else {
+                setTaskAssignee(USERS[0].name);
+            }
 
             try {
                 const { initializeApp, getDatabase, ref, onValue } = window.firebaseModules;
@@ -181,6 +198,7 @@
 
         const handleLogin = (user) => {
             setCurrentUser(user);
+            setTaskAssignee(user.name);
             localStorage.setItem('samla_user', JSON.stringify(user));
         };
 
@@ -190,40 +208,18 @@
             setView('home');
         };
 
-        // --- ACTIONS ---
-        const updateMeal = (key, val) => {
-            if(currentUser.role !== 'admin') return; // Permission Check
-            const next = { ...mealData, [key]: { name: val } };
-            setMealData(next); saveData(next, groceries, tasks);
-        };
-        
-        const changeMealDate = (oldKey, newDate) => {
-            if(currentUser.role !== 'admin' || !newDate || oldKey === newDate) return;
-            const next = { ...mealData };
-            next[newDate] = { name: next[oldKey]?.name || "" };
-            next[oldKey] = { name: "" };
-            setMealData(next); saveData(next, groceries, tasks);
-        };
-
-        const addGrocery = () => {
-            if (!groceryInput.trim()) return;
-            const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }];
-            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks);
-        };
-        
-        const toggleGrocery = (id) => {
-            const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
-            setGroceries(next); saveData(mealData, next, tasks);
-        };
-        
-        const deleteGrocery = (id) => {
-            const next = groceries.filter(g => g.id !== id);
-            setGroceries(next); saveData(mealData, next, tasks);
-        };
-
+        // --- TASK ACTIONS ---
         const addTask = () => {
             if (!taskInput.trim()) return;
-            const next = [...tasks, { id: Date.now(), text: taskInput, assignedTo: taskAssignee, isPet: isPetTask, completed: false }];
+            const next = [...tasks, { 
+                id: Date.now(), 
+                text: taskInput, 
+                assignee: taskAssignee, // Who does it
+                author: currentUser.name, // Who created it
+                date: taskDate,
+                type: taskType,
+                completed: false 
+            }];
             setTasks(next); setTaskInput(""); saveData(mealData, groceries, next);
         };
 
@@ -237,17 +233,43 @@
             setTasks(next); saveData(mealData, groceries, next);
         };
 
+        // --- OTHER ACTIONS ---
+        const updateMeal = (key, val) => {
+            if(currentUser.role !== 'admin') return;
+            const next = { ...mealData, [key]: { name: val } };
+            setMealData(next); saveData(next, groceries, tasks);
+        };
+        const addGrocery = () => {
+            if (!groceryInput.trim()) return;
+            const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }];
+            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks);
+        };
+        const toggleGrocery = (id) => {
+            const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
+            setGroceries(next); saveData(mealData, next, tasks);
+        };
+        const deleteGrocery = (id) => {
+            const next = groceries.filter(g => g.id !== id);
+            setGroceries(next); saveData(mealData, next, tasks);
+        };
+
         // --- COMPUTED ---
         const todayKey = formatDateKey(new Date());
         const todaysDinner = mealData[todayKey]?.name;
-        const groceryCount = groceries.filter(g => !g.checked).length;
-        const activeTaskCount = tasks.filter(t => !t.completed).length;
-        
+        const myTasks = tasks.filter(t => t.assignee === currentUser?.name && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
         const groceriesByStore = useMemo(() => {
             const g = {}; STORES.forEach(s => g[s] = []);
             groceries.forEach(i => { if(g[i.store]) g[i.store].push(i); else { if(!g["Annet"]) g["Annet"]=[]; g["Annet"].push(i); } });
             return g;
         }, [groceries]);
+
+        // Task Icons
+        const getTypeIcon = (type) => {
+            if(type === 'koda') return '🐺';
+            if(type === 'cooper') return '🐱';
+            if(type === 'both') return '🐺🐱';
+            return '🏠';
+        }
 
         if (!currentUser) return <LoginScreen onLogin={handleLogin} t={t} />;
 
@@ -278,30 +300,116 @@
                     {/* DASHBOARD */}
                     {view === 'home' && (
                         <div className="space-y-6 slide-up">
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3" onClick={() => setView('calendar')}>
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest"><i className="ph ph-sun"></i> {t.today}</div>
-                                <h2 className="text-3xl font-bold text-slate-800 leading-tight">{todaysDinner || <span className="text-slate-300 italic">{t.nothingPlanned}</span>}</h2>
-                            </div>
                             
+                            {/* My Tasks Section */}
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-800 mb-3">{t.myTasks}</h2>
+                                {myTasks.length === 0 ? (
+                                    <div className="bg-green-50 text-green-800 p-6 rounded-3xl border border-green-100 text-center">
+                                        <i className="ph ph-smiley text-3xl mb-2"></i>
+                                        <p className="font-bold">{t.noMyTasks}</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {myTasks.map(task => (
+                                            <div key={task.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+                                                <button onClick={() => toggleTask(task.id)} className="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center hover:bg-green-50 hover:border-green-400"></button>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between">
+                                                        <span className="font-bold text-slate-800">{task.text}</span>
+                                                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{getFriendlyDate(task.date, lang)}</span>
+                                                    </div>
+                                                    <div className="text-xs text-slate-400 flex items-center gap-2 mt-1">
+                                                        <span>{getTypeIcon(task.type)}</span>
+                                                        <span>{t.by}: {task.author}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Info Cards */}
                             <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between h-32" onClick={() => setView('calendar')}>
+                                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase"><i className="ph ph-bowl-food"></i> {t.today}</div>
+                                    <p className="font-bold text-lg leading-tight">{todaysDinner || t.nothingPlanned}</p>
+                                </div>
                                 <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg flex flex-col justify-between h-32" onClick={() => setView('groceries')}>
                                     <i className="ph ph-basket text-2xl opacity-50"></i>
-                                    <div><span className="text-2xl font-bold">{groceryCount}</span> <p className="text-xs text-slate-400">{t.items}</p></div>
-                                </div>
-                                <div className="bg-orange-50 text-orange-900 border border-orange-100 p-5 rounded-3xl flex flex-col justify-between h-32" onClick={() => setView('tasks')}>
-                                    <i className="ph ph-paw-print text-2xl opacity-50"></i>
-                                    <div><span className="text-2xl font-bold">{activeTaskCount}</span> <p className="text-xs text-orange-700/60">{t.tasks}</p></div>
+                                    <div><span className="text-2xl font-bold">{groceries.length}</span> <p className="text-xs text-slate-400">{t.items}</p></div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* CALENDAR (MEALS) */}
+                    {/* TASKS VIEW */}
+                    {view === 'tasks' && (
+                        <div className="space-y-6 slide-up">
+                            
+                            {/* CREATOR PANEL */}
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+                                {/* Type Selector */}
+                                <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
+                                    <button onClick={() => setTaskType('house')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='house' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🏠 {t.types.house}</button>
+                                    <button onClick={() => setTaskType('koda')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='koda' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🐺 {t.types.koda}</button>
+                                    <button onClick={() => setTaskType('cooper')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='cooper' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🐱 {t.types.cooper}</button>
+                                    <button onClick={() => setTaskType('both')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='both' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🐺🐱 {t.types.both}</button>
+                                </div>
+                                
+                                {/* Assignee & Date */}
+                                <div className="flex gap-2 mb-3">
+                                    <select value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700">
+                                        {USERS.map(u => <option key={u.name} value={u.name}>{t.assign}: {u.name}</option>)}
+                                    </select>
+                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-32 bg-slate-50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700" />
+                                </div>
+
+                                {/* Text & Add */}
+                                <div className="flex gap-2">
+                                    <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium" />
+                                    <button onClick={addTask} className="bg-blue-600 text-white w-12 rounded-xl flex items-center justify-center shadow-lg active:scale-95"><i className="ph ph-plus text-xl font-bold"></i></button>
+                                </div>
+                            </div>
+
+                            {/* TASK LIST */}
+                            <div className="space-y-2">
+                                {tasks.sort((a,b) => a.date > b.date ? 1 : -1).map(task => (
+                                    <div key={task.id} className={`flex items-start gap-3 bg-white p-3 rounded-2xl shadow-sm border-l-4 ${task.completed ? 'border-slate-200 opacity-50' : (task.type === 'house' ? 'border-slate-500' : 'border-orange-400')}`}>
+                                        <button onClick={() => toggleTask(task.id)} className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-slate-200 border-slate-200' : 'border-slate-200 bg-white'}`}>
+                                            {task.completed && <i className="ph ph-check text-slate-500 text-xs"></i>}
+                                        </button>
+                                        
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <p className={`text-sm font-bold ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.text}</p>
+                                                <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{getFriendlyDate(task.date, lang)}</span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-sm">{getTypeIcon(task.type)}</span>
+                                                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wide">
+                                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{task.assignee}</span>
+                                                    <span className="text-slate-300">from {task.author}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
+                                    </div>
+                                ))}
+                                {tasks.length === 0 && <p className="text-center text-slate-300 italic text-sm mt-10">No tasks created yet.</p>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CALENDAR & GROCERIES (Standard Views) */}
                     {view === 'calendar' && (
-                        <div className="space-y-4 slide-up">
+                         <div className="space-y-4 slide-up">
                             {currentUser.role !== 'admin' && (
                                 <div className="bg-yellow-50 text-yellow-800 p-3 rounded-xl text-xs text-center border border-yellow-200">
-                                    <i className="ph ph-lock-key mr-1"></i> {t.readOnly}
+                                    <i className="ph ph-lock-key mr-1"></i> {DICTIONARY[lang].readOnly}
                                 </div>
                             )}
                             <div className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm">
@@ -320,17 +428,18 @@
                                             <div className="flex justify-between mb-2">
                                                 <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-slate-300 ml-1">{date.getDate()}</span></span>
                                                 {currentUser.role === 'admin' && (
-                                                    <div className="relative group"><i className="ph ph-calendar-plus text-slate-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => changeMealDate(dateKey, e.target.value)} /></div>
+                                                    <div className="relative group"><i className="ph ph-calendar-plus text-slate-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => { 
+                                                        const next = { ...mealData };
+                                                        next[e.target.value] = { name: next[dateKey]?.name || "" };
+                                                        next[dateKey] = { name: "" };
+                                                        setMealData(next); saveData(next, groceries, tasks);
+                                                    }} /></div>
                                                 )}
                                             </div>
-                                            <input 
-                                                type="text" 
-                                                value={val} 
-                                                disabled={currentUser.role !== 'admin'}
-                                                onChange={(e) => updateMeal(dateKey, e.target.value)}
-                                                className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200 disabled:opacity-70"
-                                                placeholder={currentUser.role === 'admin' ? "..." : ""}
-                                            />
+                                            <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => {
+                                                const next = { ...mealData, [dateKey]: { name: e.target.value } };
+                                                setMealData(next); saveData(next, groceries, tasks);
+                                            }} className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200 disabled:opacity-70" placeholder={currentUser.role === 'admin' ? "..." : ""} />
                                         </div>
                                     );
                                 })}
@@ -338,61 +447,7 @@
                         </div>
                     )}
 
-                    {/* TASKS (PETS & CHORES) */}
-                    {view === 'tasks' && (
-                        <div className="space-y-6 slide-up">
-                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-2 z-30">
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setIsPetTask(false)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${!isPetTask ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-400'}`}>{t.general}</button>
-                                        <button onClick={() => setIsPetTask(true)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${isPetTask ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>🐶 {t.pets}</button>
-                                    </div>
-                                    <select value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 text-xs font-bold text-slate-600">
-                                        {USERS.map(u => <option key={u.name} value={u.name}>{t.assign}: {u.name}</option>)}
-                                    </select>
-                                    <div className="flex gap-2">
-                                        <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.addTask} className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-medium" />
-                                        <button onClick={addTask} className={`w-12 rounded-xl flex items-center justify-center text-white shadow-lg active:scale-95 transition ${isPetTask ? 'bg-orange-500 shadow-orange-200' : 'bg-slate-800 shadow-slate-200'}`}><i className="ph ph-plus text-xl font-bold"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* PET SECTION */}
-                            <div className="space-y-2">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 ml-2">{t.pets}</h3>
-                                {tasks.filter(t => t.isPet).length === 0 && <p className="text-xs text-slate-300 italic ml-2">{t.noTasks}</p>}
-                                {tasks.filter(t => t.isPet).map(task => (
-                                    <div key={task.id} className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border-l-4 border-orange-400">
-                                        <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-orange-100 border-orange-200' : 'border-slate-200'}`}>{task.completed && <i className="ph ph-check text-orange-500 text-xs"></i>}</button>
-                                        <div className={`flex-1 ${task.completed ? 'opacity-40' : ''}`}>
-                                            <p className="text-sm font-bold text-slate-800">{task.text}</p>
-                                            <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{task.assignedTo}</span>
-                                        </div>
-                                        <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* GENERAL SECTION */}
-                            <div className="space-y-2 pt-4">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-2">{t.general}</h3>
-                                {tasks.filter(t => !t.isPet).length === 0 && <p className="text-xs text-slate-300 italic ml-2">{t.noTasks}</p>}
-                                {tasks.filter(t => !t.isPet).map(task => (
-                                    <div key={task.id} className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border-l-4 border-slate-500">
-                                        <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-slate-200 border-slate-200' : 'border-slate-200'}`}>{task.completed && <i className="ph ph-check text-slate-500 text-xs"></i>}</button>
-                                        <div className={`flex-1 ${task.completed ? 'opacity-40' : ''}`}>
-                                            <p className="text-sm font-bold text-slate-800">{task.text}</p>
-                                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{task.assignedTo}</span>
-                                        </div>
-                                        <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* GROCERIES */}
-                    {view === 'groceries' && (
+                     {view === 'groceries' && (
                         <div className="space-y-6 slide-up">
                             <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-2 z-30">
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
