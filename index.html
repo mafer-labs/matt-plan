@@ -11,7 +11,6 @@
 
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
     <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
-
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU2FtbGEgRmFtaWx5IE9TIiwic2hvcnRfbmFtZSI6IlNhbWxhIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNGRkZCRjciLCJ0aGVtZV9jb2xvciI6IiNGRkZCRjciLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL21hZmVyLWxhYnMvbWF0dC1wbGFuL21haW4vTG9nby5qcGVnIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL2pwZWcifSx7InNyYyI6Imh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9tYWZlci1sYWJzL21hdHQtcGxhbi9tYWluL0xvZ28uanBlZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9qcGVnIn1dfQ==">
     
     <title>Samla - Family OS</title>
@@ -21,6 +20,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -31,35 +31,25 @@
     <style>
         body { 
             font-family: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #FFFBF7; 
-            color: #4a4a4a;
-            -webkit-tap-highlight-color: transparent;
-            padding-top: env(safe-area-inset-top);
+            background-color: #FFFBF7; color: #4a4a4a;
+            -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top);
         }
-        
-        /* Shiny Text Animation */
         .shiny-text {
             background: linear-gradient(to right, #FF8FAB, #8BE0FF, #FFD700, #FF8FAB);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            background-size: 200% auto;
-            animation: shine 3s linear infinite;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            background-size: 200% auto; animation: shine 3s linear infinite;
         }
         @keyframes shine { to { background-position: 200% center; } }
-
         .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
         input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(255, 143, 171, 0.3); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button { touch-action: manipulation; font-weight: 700; }
-        
-        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .nav-bar { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .nav-bar { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -68,9 +58,6 @@
 
 <script type="text/babel">
 
-    // ==========================================
-    // ☁️ FIREBASE CONFIG
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyD98vj78VL5Vm9xvqvSz3zGBWj34D8vuMo",
         authDomain: "josefsen-skeie-app.firebaseapp.com",
@@ -84,7 +71,6 @@
 
     const LOGO_URL = "https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg";
 
-    // --- ICONS ---
     const Icons = {
         House: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M213.38,105.74,138.83,38.27a19.78,19.78,0,0,0-21.66,0L42.62,105.74A19.9,19.9,0,0,0,36,120.6V208a20,20,0,0,0,20,20H96a4,4,0,0,0,4-4V152h56v72a4,4,0,0,0,4,4h40a20,20,0,0,0,20-20V120.6A19.9,19.9,0,0,0,213.38,105.74Z"/></svg>,
         Calendar: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM48,208V96H208V208Z"/></svg>,
@@ -110,39 +96,25 @@
     const DICTIONARY = {
         en: {
             home: "Home", calendar: "Calendar", shop: "Shop", tasks: "Tasks", recipes: "Recipes",
-            meals: "Meals", events: "Events",
-            today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
-            shoppingList: "Shopping List", items: "items", allClear: "All clear!",
-            add: "Add", login: "Who are you?", welcome: "Welcome to Samla",
-            myTasks: "My Tasks", noMyTasks: "Yay! All done!",
-            taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
+            meals: "Meals", events: "Events", today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
+            shoppingList: "Shopping List", items: "items", allClear: "All clear!", add: "Add", login: "Who are you?", welcome: "Welcome",
+            myTasks: "My Tasks", noMyTasks: "Yay! All done!", taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
             types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets" },
-            recipeTitle: "Diddri's Cookbook", addRecipe: "New Recipe", 
-            recipeName: "Recipe Name", recipeLink: "Paste Link (URL)", recipeNotes: "Summary / Notes",
-            askAI: "Summarize", viewLink: "Original",
+            recipeTitle: "Diddri's Cookbook", addRecipe: "New Recipe", recipeName: "Recipe Name", recipeLink: "Paste Link (URL)", recipeNotes: "Summary / Notes", askAI: "Summarize", viewLink: "Original",
             aiPrompt: "Please analyze this recipe URL, give me a shopping list and a short summary of steps: ",
-            newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type",
-            deleteErr: "Oops! Only the author or Maria can delete this.",
-            weather: "Weather", whiteBoard: "Family Board", writeNote: "Write a note...",
-            lang: "Language"
+            newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type", deleteErr: "Oops! Only the author or Maria can delete this.",
+            weather: "Weather", whiteBoard: "Msg Wall", writeNote: "Post a message..."
         },
         no: {
             home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
-            meals: "Matplan", events: "Hendelser",
-            today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
-            shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
-            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen til Samla",
-            myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!",
-            taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
+            meals: "Matplan", events: "Hendelser", today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
+            shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!", add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
+            myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!", taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
             types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr" },
-            recipeTitle: "Diddris Kokebok", addRecipe: "Ny Oppskrift", 
-            recipeName: "Navn på rett", recipeLink: "Lim inn lenke (URL)", recipeNotes: "Oppsummering / Notater",
-            askAI: "Oppsummer", viewLink: "Original",
+            recipeTitle: "Diddris Kokebok", addRecipe: "Ny Oppskrift", recipeName: "Navn på rett", recipeLink: "Lim inn lenke (URL)", recipeNotes: "Oppsummering / Notater", askAI: "Oppsummer", viewLink: "Original",
             aiPrompt: "Vennligst analyser denne oppskriften, gi meg en handleliste og en kort oppsummering av fremgangsmåte: ",
-            newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type",
-            deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
-            weather: "Været", whiteBoard: "Beskjedtavle", writeNote: "Skriv en beskjed...",
-            lang: "Språk"
+            newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type", deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
+            weather: "Været", whiteBoard: "Beskjedvegg", writeNote: "Skriv en melding..."
         }
     };
 
@@ -152,9 +124,31 @@
     const addDays = (date, days) => { const result = new Date(date); result.setDate(result.getDate() + days); return result; };
     const getFriendlyDate = (dateStr, lang) => { if(!dateStr) return ""; const today = formatDateKey(new Date()); if(dateStr === today) return lang === 'en' ? "Today" : "I dag"; const tomorrow = formatDateKey(addDays(new Date(), 1)); if(dateStr === tomorrow) return lang === 'en' ? "Tomorrow" : "I morgen"; return dateStr.substring(5).split('-').reverse().join('.'); };
     const getEventDateParts = (dateStr, lang) => { if(!dateStr) return { day: "", month: "" }; const parts = dateStr.split('-'); const day = parts[2]; const monthIndex = parseInt(parts[1], 10) - 1; const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; const monthsNo = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"]; return { day: day, month: lang === 'en' ? monthsEn[monthIndex] : monthsNo[monthIndex] }; };
-    
-    // --- CONFETTI ---
     const throwConfetti = () => { confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#FF8FAB', '#8BE0FF', '#FFD700', '#A7F3D0'], disableForReducedMotion: true, scalar: 1.2 }); };
+
+    // --- COMPONENT: SMART INPUT (Prevents Jumping) ---
+    const SmartInput = ({ value, onSave, placeholder, disabled, className }) => {
+        const [localValue, setLocalValue] = useState(value || "");
+        
+        // Update local state if prop changes from outside (e.g. another user edits), but only if not focused
+        useEffect(() => { setLocalValue(value || ""); }, [value]);
+
+        const handleBlur = () => {
+            if (localValue !== value) { onSave(localValue); }
+        };
+
+        return (
+            <input 
+                type="text" 
+                className={className} 
+                value={localValue} 
+                onChange={(e) => setLocalValue(e.target.value)} 
+                onBlur={handleBlur}
+                disabled={disabled}
+                placeholder={placeholder}
+            />
+        );
+    };
 
     // --- LOGIN SCREEN ---
     const LoginScreen = ({ onLogin, t, lang, setLang }) => (
@@ -162,10 +156,7 @@
             <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="absolute top-10 right-6 bg-white/50 px-3 py-1 rounded-full text-2xl font-bold shadow-sm backdrop-blur-sm">
                 {lang === 'en' ? '🇬🇧' : '🇳🇴'}
             </button>
-            
-            {/* SHINY BANNER */}
             <h1 className="text-6xl font-black mb-8 shiny-text tracking-tighter">Samla.</h1>
-            
             <h2 className="text-2xl font-bold mb-2 text-gray-800">{t.welcome}</h2>
             <p className="text-gray-500 mb-8 font-bold">{t.login}</p>
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
@@ -192,7 +183,7 @@
         const [tasks, setTasks] = useState([]);
         const [recipes, setRecipes] = useState([]);
         const [events, setEvents] = useState([]);
-        const [whiteboard, setWhiteboard] = useState("");
+        const [messages, setMessages] = useState([]); // Changed from whiteboard string to array
 
         // Inputs
         const [taskInput, setTaskInput] = useState("");
@@ -209,6 +200,7 @@
         const [eventName, setEventName] = useState("");
         const [eventDate, setEventDate] = useState(formatDateKey(new Date()));
         const [eventType, setEventType] = useState(EVENT_TYPES[0]);
+        const [messageInput, setMessageInput] = useState("");
 
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
@@ -239,7 +231,7 @@
                         if (data.tasks) setTasks(data.tasks);
                         if (data.recipes) setRecipes(data.recipes);
                         if (data.events) setEvents(data.events);
-                        if (data.whiteboard) setWhiteboard(data.whiteboard);
+                        if (data.messages) setMessages(data.messages);
                     }
                 });
             } catch (e) { console.error(e); setSyncStatus('error'); }
@@ -251,7 +243,7 @@
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => {
                 const { ref, set } = window.firebaseModules;
-                set(ref(db, 'family_data'), { meals: mealData, groceries, tasks, recipes, events, whiteboard, ...updates })
+                set(ref(db, 'family_data'), { meals: mealData, groceries, tasks, recipes, events, messages, ...updates })
                 .then(() => setSyncStatus('saved')).catch(() => setSyncStatus('error'));
             }, 500);
         };
@@ -265,8 +257,10 @@
         const deleteTask = (id) => { const task = tasks.find(t => t.id === id); if (task.author !== currentUser.name && currentUser.name !== "Maria") { alert(t.deleteErr); return; } const next = tasks.filter(t => t.id !== id); setTasks(next); saveData({ tasks: next }); };
         const toggleAssignee = (name) => { if(taskAssignees.includes(name)) setTaskAssignees(taskAssignees.filter(n => n !== name)); else setTaskAssignees([...taskAssignees, name]); };
         
-        const updateWhiteboard = (val) => { setWhiteboard(val); saveData({ whiteboard: val }); };
-        const updateMeal = (key, val) => { if(currentUser.role !== 'admin') return; const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
+        const postMessage = () => { if(!messageInput.trim()) return; const next = [...(messages || []), { id: Date.now(), text: messageInput, author: currentUser.name, color: currentUser.color }]; setMessages(next); setMessageInput(""); saveData({ messages: next }); };
+        const deleteMessage = (id) => { const next = messages.filter(m => m.id !== id); setMessages(next); saveData({ messages: next }); };
+
+        const updateMeal = (key, val) => { const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
         const addGrocery = () => { if (!groceryInput.trim()) return; const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }]; setGroceries(next); setGroceryInput(""); saveData({ groceries: next }); };
         const toggleGrocery = (id) => { const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g); setGroceries(next); saveData({ groceries: next }); };
         const deleteGrocery = (id) => { const next = groceries.filter(g => g.id !== id); setGroceries(next); saveData({ groceries: next }); };
@@ -320,10 +314,25 @@
                                 )}
                             </div>
 
-                            {/* Whiteboard */}
-                            <div className="card p-4 bg-yellow-50 border-yellow-100 shadow-yellow-100/50">
+                            {/* Message Wall */}
+                            <div className="card p-4 bg-yellow-50/50 border-yellow-100 shadow-xl shadow-yellow-100/50 relative">
                                 <h3 className="text-xs font-black text-yellow-600 uppercase mb-2 ml-1 tracking-widest">{t.whiteBoard}</h3>
-                                <textarea value={whiteboard} onChange={(e) => updateWhiteboard(e.target.value)} placeholder={t.writeNote} className="w-full bg-white/50 rounded-xl p-3 text-sm font-bold text-gray-700 h-20 resize-none placeholder-gray-400 border-none"></textarea>
+                                <div className="h-40 overflow-y-auto no-scrollbar flex flex-col gap-2 mb-2 p-1">
+                                    {!messages || messages.length === 0 ? <p className="text-center text-yellow-300 italic text-sm mt-10">Empty wall...</p> : 
+                                    messages.map(m => (
+                                        <div key={m.id} className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm flex justify-between items-start animate-[fadeIn_0.3s]">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-700">{m.text}</p>
+                                                <p className="text-[10px] text-gray-400 mt-1">{m.author}</p>
+                                            </div>
+                                            <button onClick={() => deleteMessage(m.id)} className="text-gray-200 hover:text-red-300"><i className="ph ph-x"></i></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input type="text" value={messageInput} onChange={(e) => setMessageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postMessage()} placeholder={t.writeNote} className="flex-1 bg-white p-2 rounded-xl text-sm font-bold shadow-sm" />
+                                    <button onClick={postMessage} className="bg-yellow-400 text-white w-10 rounded-xl flex items-center justify-center shadow-lg"><i className="ph ph-paper-plane-right-fill"></i></button>
+                                </div>
                             </div>
 
                             {/* Next Event */}
@@ -397,7 +406,7 @@
                                                         <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-500' : 'text-gray-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-gray-800 text-base ml-1">{date.getDate()}</span></span>
                                                         {currentUser.role === 'admin' && <div className="relative group text-gray-300"><Icons.Calendar className="w-5 h-5" /><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0 cursor-pointer" onChange={(e) => { const next = { ...mealData }; next[e.target.value] = { name: next[dateKey]?.name || "" }; next[dateKey] = { name: "" }; setMealData(next); saveData({ meals: next }); }} /></div>}
                                                     </div>
-                                                    <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => { const next = { ...mealData, [dateKey]: { name: e.target.value } }; setMealData(next); saveData({ meals: next }); }} className="w-full bg-transparent font-bold text-xl text-gray-800 placeholder-gray-200 disabled:opacity-70" placeholder="..." />
+                                                    <SmartInput className="w-full bg-transparent font-bold text-xl text-gray-800 placeholder-gray-200 disabled:opacity-70" value={val} disabled={currentUser.role !== 'admin'} onSave={(newVal) => updateMeal(dateKey, newVal)} placeholder="..." />
                                                 </div>
                                             );
                                         })}
@@ -458,6 +467,7 @@
                                     })}
                                 </div>
                                 <div className="flex gap-2">
+                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-11 bg-white rounded-2xl px-2 py-3 text-xs font-bold text-transparent bg-[url('https://unpkg.com/@phosphor-icons/web/assets/calendar-fill.svg')] bg-no-repeat bg-center shadow-sm" />
                                     <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-white rounded-2xl px-5 py-3 text-sm font-bold placeholder-gray-300 shadow-sm" />
                                     <button onClick={addTask} className="bg-pink-500 text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-200 active:scale-95 transition text-xl font-bold">+</button>
                                 </div>
