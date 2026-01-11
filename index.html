@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Middag - Family Meal Planner</title>
+    <title>Middag - Disengrenda</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -16,9 +16,13 @@
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdfa; }
-        .card-hover:hover { transform: translateY(-1px); transition: all 0.2s; }
         .slide-in { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Remove default date input styling for cleaner look */
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -29,53 +33,60 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- CONFIG ---
-    const STORES = ["General/Annet", "Rema 1000", "Kiwi", "Meny", "Europris", "Gigaboks"];
+    // --- CONFIG: LOCAL STORES ---
+    const STORES = [
+        "Rema 1000 Nordre Åsen", 
+        "Kiwi Bjerke", 
+        "Joker Disen", 
+        "Meny Grefsen", 
+        "Europris", 
+        "Gigaboks",
+        "Annet / General"
+    ];
+
     const STORE_COLORS = {
-        "Rema 1000": "bg-blue-100 text-blue-800 border-blue-200",
-        "Kiwi": "bg-green-100 text-green-800 border-green-200",
-        "Meny": "bg-red-100 text-red-800 border-red-200",
-        "General/Annet": "bg-gray-100 text-gray-800 border-gray-200",
-        "Europris": "bg-yellow-100 text-yellow-800 border-yellow-200",
-        "Gigaboks": "bg-purple-100 text-purple-800 border-purple-200"
+        "Rema 1000 Nordre Åsen": "bg-blue-100 text-blue-900 border-blue-200", // Rema Blue
+        "Kiwi Bjerke": "bg-green-100 text-green-900 border-green-200", // Kiwi Green
+        "Joker Disen": "bg-yellow-100 text-yellow-900 border-yellow-200", // Joker Yellow
+        "Meny Grefsen": "bg-red-100 text-red-900 border-red-200", // Meny Red
+        "Annet / General": "bg-gray-100 text-gray-800 border-gray-200"
     };
 
     const DICTIONARY = {
         en: {
-            appTitle: "Family Middag",
-            tabs: ["Calendar", "Groceries", "Map"],
+            appTitle: "Middag Disengrenda",
+            tabs: ["Calendar", "Groceries"],
             totalBudget: "Est. Cost",
             shoppingList: "Shopping List",
-            addItem: "Add item...",
+            addItem: "Add item (e.g. Milk)",
             add: "Add",
-            move: "Move Meal",
+            move: "Move to date",
             today: "Today",
-            clear: "Clear Day",
-            stores: "Stores"
+            clear: "Clear",
+            selectStore: "Select Store"
         },
         no: {
-            appTitle: "Middagsplanlegger",
-            tabs: ["Kalender", "Handleliste", "Kart"],
+            appTitle: "Middag Disengrenda",
+            tabs: ["Kalender", "Handleliste"],
             totalBudget: "Est. Pris",
             shoppingList: "Handleliste",
-            addItem: "Legg til vare...",
+            addItem: "Legg til vare (f.eks Melk)",
             add: "Legg til",
-            move: "Flytt måltid",
+            move: "Flytt til dato",
             today: "I dag",
-            clear: "Tøm dag",
-            stores: "Butikker"
+            clear: "Tøm",
+            selectStore: "Velg Butikk"
         }
     };
 
-    // --- DATE HELPERS ---
+    // --- HELPERS ---
     const getMonday = (d) => {
         d = new Date(d);
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         return new Date(d.setDate(diff));
     };
-
-    const formatDateKey = (date) => date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const formatDateKey = (date) => date.toISOString().split('T')[0];
     const addDays = (date, days) => {
         const result = new Date(date);
         result.setDate(result.getDate() + days);
@@ -87,12 +98,12 @@
         const [lang, setLang] = useState('en'); 
         const [view, setView] = useState('calendar');
         
-        // Calendar State
+        // Data
         const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
-        const [mealData, setMealData] = useState({}); // Keyed by YYYY-MM-DD
-        
-        // Grocery State
+        const [mealData, setMealData] = useState({});
         const [groceries, setGroceries] = useState([]);
+        
+        // Inputs
         const [groceryInput, setGroceryInput] = useState("");
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
 
@@ -100,22 +111,18 @@
 
         // --- PERSISTENCE ---
         useEffect(() => {
-            const savedMeals = JSON.parse(localStorage.getItem('middag_meals_v3'));
-            const savedGroceries = JSON.parse(localStorage.getItem('middag_groceries_v3'));
+            const savedMeals = JSON.parse(localStorage.getItem('middag_meals_v4'));
+            const savedGroceries = JSON.parse(localStorage.getItem('middag_groceries_v4'));
             if (savedMeals) setMealData(savedMeals);
             if (savedGroceries) setGroceries(savedGroceries);
         }, []);
 
         useEffect(() => {
-            localStorage.setItem('middag_meals_v3', JSON.stringify(mealData));
-            localStorage.setItem('middag_groceries_v3', JSON.stringify(groceries));
+            localStorage.setItem('middag_meals_v4', JSON.stringify(mealData));
+            localStorage.setItem('middag_groceries_v4', JSON.stringify(groceries));
         }, [mealData, groceries]);
 
-        // --- CALENDAR LOGIC ---
-        const weekDays = useMemo(() => {
-            return Array(7).fill(0).map((_, i) => addDays(currentWeekStart, i));
-        }, [currentWeekStart]);
-
+        // --- LOGIC ---
         const updateMeal = (dateKey, field, value) => {
             setMealData(prev => ({
                 ...prev,
@@ -123,36 +130,26 @@
             }));
         };
 
-        const moveMeal = (dateKey, direction) => {
-            const currentData = mealData[dateKey];
-            if (!currentData || !currentData.name) return;
-
-            const currentDate = new Date(dateKey);
-            const newDate = addDays(currentDate, direction);
-            const newKey = formatDateKey(newDate);
-
+        const changeMealDate = (oldDateKey, newDateString) => {
+            if (!newDateString || oldDateKey === newDateString) return;
+            
             setMealData(prev => {
                 const newData = { ...prev };
-                // Set new date
-                newData[newKey] = { 
-                    ...newData[newKey], 
-                    name: currentData.name, 
-                    price: currentData.price 
+                const currentMeal = newData[oldDateKey] || { name: "", price: "" };
+                
+                // Copy to new date
+                newData[newDateString] = { 
+                    name: currentMeal.name, 
+                    price: currentMeal.price 
                 };
+                
                 // Clear old date
-                newData[dateKey] = { name: "", price: "" };
+                newData[oldDateKey] = { name: "", price: "" };
                 return newData;
             });
+            alert(`Moved to ${newDateString}`);
         };
 
-        const calculateWeeklyTotal = () => {
-            return weekDays.reduce((acc, date) => {
-                const key = formatDateKey(date);
-                return acc + (parseInt(mealData[key]?.price) || 0);
-            }, 0);
-        };
-
-        // --- GROCERY LOGIC ---
         const addGrocery = () => {
             if (groceryInput.trim() === "") return;
             setGroceries([...groceries, { 
@@ -164,127 +161,114 @@
             setGroceryInput("");
         };
 
-        const toggleGrocery = (id) => {
-            setGroceries(groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g));
-        };
+        const toggleGrocery = (id) => setGroceries(groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g));
+        const deleteGrocery = (id) => setGroceries(groceries.filter(g => g.id !== id));
 
-        const deleteGrocery = (id) => {
-            setGroceries(groceries.filter(g => g.id !== id));
-        };
-
-        // Group groceries by store
         const groceriesByStore = useMemo(() => {
             const groups = {};
-            STORES.forEach(store => groups[store] = []);
+            STORES.forEach(s => groups[s] = []);
             groceries.forEach(item => {
                 if (groups[item.store]) groups[item.store].push(item);
-                else groups["General/Annet"].push(item); // Fallback
+                else {
+                    if(!groups["Annet / General"]) groups["Annet / General"] = [];
+                    groups["Annet / General"].push(item);
+                }
             });
             return groups;
         }, [groceries]);
 
+        const weeklyTotal = useMemo(() => {
+            return Array(7).fill(0).map((_, i) => addDays(currentWeekStart, i)).reduce((acc, date) => {
+                const key = formatDateKey(date);
+                return acc + (parseInt(mealData[key]?.price) || 0);
+            }, 0);
+        }, [mealData, currentWeekStart]);
+
         // --- RENDER ---
         return (
-            <div className="min-h-screen max-w-md mx-auto bg-gray-50 shadow-2xl overflow-hidden flex flex-col">
+            <div className="min-h-screen max-w-md mx-auto bg-gray-50 shadow-2xl overflow-hidden flex flex-col font-sans">
                 
                 {/* HEADER */}
-                <header className="bg-teal-700 text-white p-4 pb-2 z-10 shadow-md">
+                <header className="bg-teal-700 text-white p-4 shadow-md sticky top-0 z-50">
                     <div className="flex justify-between items-center mb-4">
-                        <div>
-                            <h1 className="text-xl font-bold">{t.appTitle}</h1>
-                            <p className="text-xs text-teal-200">Disengrenda 24G</p>
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-bold tracking-wide">{t.appTitle}</h1>
+                            <span className="text-xs text-teal-200 opacity-80">24G Family Planner</span>
                         </div>
-                        <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="text-xs bg-teal-800/50 px-2 py-1 rounded hover:bg-teal-600">
+                        <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="bg-teal-900/40 hover:bg-teal-800 px-3 py-1 rounded text-xs font-bold transition">
                             {lang === 'en' ? 'NO' : 'EN'}
                         </button>
                     </div>
-
-                    {/* TABS */}
-                    <div className="flex justify-between text-sm font-medium">
-                        <button onClick={() => setView('calendar')} className={`pb-2 px-2 border-b-2 transition ${view === 'calendar' ? 'border-white text-white' : 'border-transparent text-teal-200'}`}>
+                    <div className="flex gap-4 text-sm font-medium">
+                        <button onClick={() => setView('calendar')} className={`flex-1 pb-2 border-b-4 transition ${view === 'calendar' ? 'border-teal-200 text-white' : 'border-transparent text-teal-300'}`}>
                             {t.tabs[0]}
                         </button>
-                        <button onClick={() => setView('groceries')} className={`pb-2 px-2 border-b-2 transition ${view === 'groceries' ? 'border-white text-white' : 'border-transparent text-teal-200'}`}>
+                        <button onClick={() => setView('groceries')} className={`flex-1 pb-2 border-b-4 transition ${view === 'groceries' ? 'border-teal-200 text-white' : 'border-transparent text-teal-300'}`}>
                             {t.tabs[1]}
-                        </button>
-                         <button onClick={() => setView('map')} className={`pb-2 px-2 border-b-2 transition ${view === 'map' ? 'border-white text-white' : 'border-transparent text-teal-200'}`}>
-                            {t.tabs[2]}
                         </button>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-3 bg-gray-100">
-                    
-                    {/* --- CALENDAR VIEW --- */}
+                <main className="flex-1 overflow-y-auto p-3 pb-20">
+
+                    {/* VIEW: CALENDAR */}
                     {view === 'calendar' && (
-                        <div className="space-y-4 pb-20">
-                            {/* Week Navigation */}
-                            <div className="bg-white p-3 rounded-xl shadow-sm flex justify-between items-center sticky top-0 z-10 border-b border-gray-100">
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="p-2 hover:bg-gray-100 rounded-full">
-                                    <i className="ph ph-caret-left text-xl"></i>
-                                </button>
+                        <div className="space-y-4">
+                            {/* Week Nav */}
+                            <div className="bg-white rounded-lg p-3 shadow-sm flex justify-between items-center">
+                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i className="ph ph-caret-left"></i></button>
                                 <div className="text-center">
                                     <div className="text-sm font-bold text-gray-800">
-                                        Week {Math.ceil((currentWeekStart - new Date(currentWeekStart.getFullYear(),0,1)) / 86400000 / 7)}
+                                        {currentWeekStart.toLocaleDateString(lang === 'en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - 
+                                        {addDays(currentWeekStart, 6).toLocaleDateString(lang === 'en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}
                                     </div>
-                                    <div className="text-xs text-gray-500">
-                                        {currentWeekStart.toLocaleDateString(lang === 'en' ? 'en-GB' : 'no-NO', { day: 'numeric', month: 'short' })} - 
-                                        {addDays(currentWeekStart, 6).toLocaleDateString(lang === 'en' ? 'en-GB' : 'no-NO', { day: 'numeric', month: 'short' })}
-                                    </div>
+                                    <div className="text-xs text-teal-600 font-bold mt-1">{t.totalBudget}: {weeklyTotal} kr</div>
                                 </div>
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="p-2 hover:bg-gray-100 rounded-full">
-                                    <i className="ph ph-caret-right text-xl"></i>
-                                </button>
-                            </div>
-
-                            {/* Total Budget */}
-                            <div className="flex justify-between items-center px-2">
-                                <span className="text-xs font-bold text-gray-400 uppercase">{t.totalBudget}</span>
-                                <span className="text-xl font-bold text-teal-700">{calculateWeeklyTotal()} kr</span>
+                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i className="ph ph-caret-right"></i></button>
                             </div>
 
                             {/* Days */}
                             <div className="space-y-3">
-                                {weekDays.map((date) => {
+                                {Array(7).fill(0).map((_, i) => {
+                                    const date = addDays(currentWeekStart, i);
                                     const dateKey = formatDateKey(date);
                                     const data = mealData[dateKey] || { name: "", price: "" };
                                     const isToday = formatDateKey(new Date()) === dateKey;
-                                    
+
                                     return (
-                                        <div key={dateKey} className={`p-3 rounded-xl shadow-sm border-l-4 transition relative ${isToday ? 'bg-white border-teal-500 ring-2 ring-teal-100' : 'bg-white border-gray-300'}`}>
-                                            
-                                            {/* Date Header */}
-                                            <div className="flex justify-between items-center mb-1">
+                                        <div key={dateKey} className={`relative p-3 rounded-xl border-l-4 shadow-sm transition ${isToday ? 'bg-white border-teal-500 ring-2 ring-teal-50 z-10' : 'bg-white border-gray-200'}`}>
+                                            <div className="flex justify-between items-center mb-2">
                                                 <span className={`text-xs font-bold uppercase ${isToday ? 'text-teal-600' : 'text-gray-400'}`}>
-                                                    {date.toLocaleDateString(lang === 'en' ? 'en-GB' : 'no-NO', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                                                    {date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long', day:'numeric', month:'numeric'})}
                                                 </span>
                                                 
-                                                {/* Move Buttons */}
-                                                <div className="flex gap-1">
-                                                    <button onClick={() => moveMeal(dateKey, -1)} className="text-gray-300 hover:text-teal-600 p-1" title="Postpone to yesterday">
-                                                        <i className="ph ph-arrow-up text-sm"></i>
+                                                {/* CHANGE DATE BUTTON */}
+                                                <div className="relative group">
+                                                    <button className="text-gray-300 hover:text-teal-600" title={t.move}>
+                                                        <i className="ph ph-calendar-plus text-lg"></i>
                                                     </button>
-                                                    <button onClick={() => moveMeal(dateKey, 1)} className="text-gray-300 hover:text-teal-600 p-1" title="Postpone to tomorrow">
-                                                        <i className="ph ph-arrow-down text-sm"></i>
-                                                    </button>
+                                                    <input 
+                                                        type="date" 
+                                                        className="absolute top-0 right-0 w-8 h-8 opacity-0 cursor-pointer"
+                                                        onChange={(e) => changeMealDate(dateKey, e.target.value)}
+                                                    />
                                                 </div>
                                             </div>
 
-                                            {/* Inputs */}
                                             <div className="flex gap-2">
                                                 <input 
                                                     type="text" 
-                                                    className="flex-1 font-medium text-gray-800 bg-transparent outline-none placeholder-gray-300"
-                                                    placeholder="..."
                                                     value={data.name}
                                                     onChange={(e) => updateMeal(dateKey, 'name', e.target.value)}
+                                                    placeholder="..."
+                                                    className="flex-1 bg-transparent font-medium text-gray-800 outline-none placeholder-gray-300 border-b border-transparent focus:border-teal-300 transition"
                                                 />
                                                 <input 
-                                                    type="number" 
-                                                    className="w-16 text-right text-sm text-gray-500 bg-gray-50 rounded px-1 outline-none"
-                                                    placeholder="kr"
+                                                    type="number"
                                                     value={data.price}
                                                     onChange={(e) => updateMeal(dateKey, 'price', e.target.value)}
+                                                    placeholder="kr"
+                                                    className="w-16 text-right bg-gray-50 rounded px-2 text-sm text-gray-600 outline-none focus:ring-1 focus:ring-teal-300"
                                                 />
                                             </div>
                                         </div>
@@ -294,64 +278,57 @@
                         </div>
                     )}
 
-                    {/* --- GROCERY VIEW --- */}
+                    {/* VIEW: GROCERIES */}
                     {view === 'groceries' && (
-                        <div className="pb-20 space-y-6">
-                            {/* Input Area */}
-                            <div className="bg-white p-4 rounded-xl shadow-sm sticky top-0 z-10">
-                                <div className="flex gap-2 mb-2">
-                                    <input 
-                                        type="text" 
-                                        className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-teal-500"
-                                        placeholder={t.addItem}
-                                        value={groceryInput}
-                                        onChange={(e) => setGroceryInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && addGrocery()}
-                                    />
-                                    <button onClick={addGrocery} className="bg-teal-600 text-white px-4 rounded-lg font-bold shadow-sm hover:bg-teal-700">
-                                        <i className="ph ph-plus"></i>
-                                    </button>
-                                </div>
-                                {/* Store Selector */}
-                                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                    {STORES.map(store => (
-                                        <button 
-                                            key={store}
-                                            onClick={() => setSelectedStore(store)}
-                                            className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold border transition ${selectedStore === store ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white text-gray-500 border-gray-200'}`}
-                                        >
-                                            {store}
+                        <div className="space-y-6">
+                            
+                            {/* Input Box */}
+                            <div className="bg-white p-4 rounded-xl shadow-md sticky top-0 z-20 border border-teal-50">
+                                <div className="flex flex-col gap-3">
+                                    <select 
+                                        value={selectedStore} 
+                                        onChange={(e) => setSelectedStore(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-teal-500"
+                                    >
+                                        {STORES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                    
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={groceryInput}
+                                            onChange={(e) => setGroceryInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && addGrocery()}
+                                            placeholder={t.addItem}
+                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                        <button onClick={addGrocery} className="bg-teal-600 text-white px-4 rounded-lg shadow hover:bg-teal-700 transition">
+                                            <i className="ph ph-plus font-bold"></i>
                                         </button>
-                                    ))}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Grouped Lists */}
+                            {/* Lists by Store */}
                             {STORES.map(store => {
                                 const items = groceriesByStore[store] || [];
                                 if (items.length === 0) return null;
                                 
                                 return (
                                     <div key={store} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden slide-in">
-                                        <div className={`px-4 py-2 font-bold text-sm flex items-center gap-2 border-b ${STORE_COLORS[store] || "bg-gray-100"}`}>
-                                            <i className="ph ph-storefront"></i>
-                                            {store}
-                                            <span className="ml-auto bg-white/50 px-2 rounded-full text-xs">{items.length}</span>
+                                        <div className={`px-4 py-2 text-sm font-bold flex items-center justify-between ${STORE_COLORS[store] || STORE_COLORS["Annet / General"]}`}>
+                                            <span>{store}</span>
+                                            <span className="bg-white/40 px-2 rounded-full text-xs">{items.length}</span>
                                         </div>
                                         <div className="divide-y divide-gray-50">
                                             {items.map(item => (
                                                 <div key={item.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 group">
-                                                    <button 
-                                                        onClick={() => toggleGrocery(item.id)}
-                                                        className={`w-5 h-5 rounded border flex items-center justify-center transition ${item.checked ? 'bg-gray-400 border-gray-400' : 'border-gray-300 bg-white'}`}
-                                                    >
+                                                    <button onClick={() => toggleGrocery(item.id)} className={`w-5 h-5 rounded border flex items-center justify-center transition ${item.checked ? 'bg-gray-400 border-gray-400' : 'bg-white border-gray-300'}`}>
                                                         {item.checked && <i className="ph ph-check text-white text-xs"></i>}
                                                     </button>
-                                                    <span className={`flex-1 ${item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
-                                                        {item.text}
-                                                    </span>
+                                                    <span className={`flex-1 text-sm ${item.checked ? 'text-gray-300 line-through' : 'text-gray-700'}`}>{item.text}</span>
                                                     <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
-                                                        <i className="ph ph-x"></i>
+                                                        <i className="ph ph-trash"></i>
                                                     </button>
                                                 </div>
                                             ))}
@@ -359,26 +336,13 @@
                                     </div>
                                 );
                             })}
-                            
+
                             {groceries.length === 0 && (
-                                <div className="text-center text-gray-400 mt-10">
-                                    <i className="ph ph-basket text-4xl mb-2"></i>
-                                    <p>Your list is empty / Handlelisten er tom</p>
+                                <div className="text-center text-gray-400 mt-12">
+                                    <i className="ph ph-shopping-cart text-4xl mb-2 opacity-20"></i>
+                                    <p>Ready to plan!</p>
                                 </div>
                             )}
-                        </div>
-                    )}
-                    
-                     {/* --- MAP PLACEHOLDER VIEW --- */}
-                    {view === 'map' && (
-                        <div className="text-center p-8 text-gray-500">
-                             <h2 className="text-lg font-bold mb-2">Local Stores</h2>
-                             <p>Map integration coming soon.</p>
-                             <ul className="mt-4 text-left bg-white p-4 rounded shadow-sm">
-                                 <li>📍 Rema 1000 Storo (1.2km)</li>
-                                 <li>📍 Kiwi Grefsenveien (0.6km)</li>
-                                 <li>📍 Meny Storo (1.2km)</li>
-                             </ul>
                         </div>
                     )}
 
