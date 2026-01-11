@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Middag - Disengrenda</title>
+    <title>Middag - Josefsen-Skeie</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -14,11 +14,17 @@
     
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        window.firebaseModules = { initializeApp, getDatabase, ref, set, onValue };
+    </script>
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdfa; }
         .slide-in { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Remove default date input styling for cleaner look */
+        /* Clean Date Input */
         input[type="date"]::-webkit-inner-spin-button,
         input[type="date"]::-webkit-calendar-picker-indicator {
             opacity: 0; position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;
@@ -31,51 +37,60 @@
 
 <script type="text/babel">
 
-    const { useState, useEffect, useMemo } = React;
+    // ==========================================
+    // ✅ FINAL CONFIGURATION
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyD98vj78VL5Vm9xvqvSz3zGBWj34D8vuMo",
+        authDomain: "josefsen-skeie-app.firebaseapp.com",
+        projectId: "josefsen-skeie-app",
+        storageBucket: "josefsen-skeie-app.firebasestorage.app",
+        messagingSenderId: "198203528510",
+        appId: "1:198203528510:web:c3f5d61a6fa6e47180486f",
+        measurementId: "G-1EN2J9CBNL",
+        // Added from your previous message:
+        databaseURL: "https://josefsen-skeie-app-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+    // ==========================================
 
-    // --- CONFIG: LOCAL STORES ---
-    const STORES = [
-        "Rema 1000 Nordre Åsen", 
-        "Kiwi Bjerke", 
-        "Joker Disen", 
-        "Meny Grefsen", 
-        "Europris", 
-        "Gigaboks",
-        "Annet / General"
-    ];
+    const { useState, useEffect, useMemo, useRef } = React;
 
+    // --- CONFIG ---
+    const STORES = ["Rema 1000 Nordre Åsen", "Kiwi Bjerke", "Joker Disen", "Meny Grefsen", "Europris", "Gigaboks", "Annet / General"];
     const STORE_COLORS = {
-        "Rema 1000 Nordre Åsen": "bg-blue-100 text-blue-900 border-blue-200", // Rema Blue
-        "Kiwi Bjerke": "bg-green-100 text-green-900 border-green-200", // Kiwi Green
-        "Joker Disen": "bg-yellow-100 text-yellow-900 border-yellow-200", // Joker Yellow
-        "Meny Grefsen": "bg-red-100 text-red-900 border-red-200", // Meny Red
+        "Rema 1000 Nordre Åsen": "bg-blue-100 text-blue-900 border-blue-200",
+        "Kiwi Bjerke": "bg-green-100 text-green-900 border-green-200",
+        "Joker Disen": "bg-yellow-100 text-yellow-900 border-yellow-200",
+        "Meny Grefsen": "bg-red-100 text-red-900 border-red-200",
         "Annet / General": "bg-gray-100 text-gray-800 border-gray-200"
     };
 
     const DICTIONARY = {
         en: {
-            appTitle: "Middag Disengrenda",
+            appTitle: "Middag Josefsen-Skeie",
             tabs: ["Calendar", "Groceries"],
-            totalBudget: "Est. Cost",
             shoppingList: "Shopping List",
             addItem: "Add item (e.g. Milk)",
             add: "Add",
             move: "Move to date",
             today: "Today",
             clear: "Clear",
-            selectStore: "Select Store"
+            saved: "Synced",
+            saving: "Syncing...",
+            error: "Connection Error"
         },
         no: {
-            appTitle: "Middag Disengrenda",
+            appTitle: "Middag Josefsen-Skeie",
             tabs: ["Kalender", "Handleliste"],
-            totalBudget: "Est. Pris",
             shoppingList: "Handleliste",
             addItem: "Legg til vare (f.eks Melk)",
             add: "Legg til",
             move: "Flytt til dato",
             today: "I dag",
             clear: "Tøm",
-            selectStore: "Velg Butikk"
+            saved: "Lagret",
+            saving: "Lagrer...",
+            error: "Koblingsfeil"
         }
     };
 
@@ -94,76 +109,123 @@
     };
 
     const App = () => {
-        // --- STATE ---
+        const [db, setDb] = useState(null);
+
+        // State
         const [lang, setLang] = useState('en'); 
         const [view, setView] = useState('calendar');
+        const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         
         // Data
-        const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         const [mealData, setMealData] = useState({});
         const [groceries, setGroceries] = useState([]);
-        
+        const [syncStatus, setSyncStatus] = useState('saved');
+
         // Inputs
         const [groceryInput, setGroceryInput] = useState("");
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
+        
+        // Debounce Ref
+        const timeoutRef = useRef(null);
 
         const t = DICTIONARY[lang];
 
-        // --- PERSISTENCE ---
+        // --- FIREBASE INIT ---
         useEffect(() => {
-            const savedMeals = JSON.parse(localStorage.getItem('middag_meals_v4'));
-            const savedGroceries = JSON.parse(localStorage.getItem('middag_groceries_v4'));
-            if (savedMeals) setMealData(savedMeals);
-            if (savedGroceries) setGroceries(savedGroceries);
+            try {
+                const { initializeApp, getDatabase, ref, onValue } = window.firebaseModules;
+                const app = initializeApp(firebaseConfig);
+                const database = getDatabase(app);
+                setDb(database);
+
+                // SUBSCRIBE TO DATA
+                const dataRef = ref(database, 'family_data');
+                onValue(dataRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        if (data.meals) setMealData(data.meals);
+                        if (data.groceries) setGroceries(data.groceries);
+                    }
+                }, (error) => {
+                    console.error("Read Error:", error);
+                    setSyncStatus('error');
+                    alert("Database Error: Ensure you selected 'Start in Test Mode' in Firebase Console -> Database -> Rules.");
+                });
+
+            } catch (e) {
+                console.error("Firebase Init Error:", e);
+                setSyncStatus('error');
+            }
         }, []);
 
-        useEffect(() => {
-            localStorage.setItem('middag_meals_v4', JSON.stringify(mealData));
-            localStorage.setItem('middag_groceries_v4', JSON.stringify(groceries));
-        }, [mealData, groceries]);
+        // --- SYNC LOGIC ---
+        const saveData = (newMeals, newGroceries) => {
+            if (!db) return;
+            setSyncStatus('saving');
+            
+            // Clear existing timeout to debounce
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-        // --- LOGIC ---
-        const updateMeal = (dateKey, field, value) => {
-            setMealData(prev => ({
-                ...prev,
-                [dateKey]: { ...prev[dateKey], [field]: value }
-            }));
+            timeoutRef.current = setTimeout(() => {
+                const { ref, set } = window.firebaseModules;
+                set(ref(db, 'family_data'), {
+                    meals: newMeals,
+                    groceries: newGroceries
+                }).then(() => {
+                    setSyncStatus('saved');
+                }).catch(err => {
+                    console.error("Write Error:", err);
+                    setSyncStatus('error');
+                });
+            }, 500); 
+        };
+
+        // --- ACTIONS ---
+        const updateMeal = (dateKey, val) => {
+            const newMeals = { ...mealData, [dateKey]: { name: val } };
+            setMealData(newMeals); // Optimistic update
+            saveData(newMeals, groceries);
         };
 
         const changeMealDate = (oldDateKey, newDateString) => {
             if (!newDateString || oldDateKey === newDateString) return;
             
-            setMealData(prev => {
-                const newData = { ...prev };
-                const currentMeal = newData[oldDateKey] || { name: "", price: "" };
-                
-                // Copy to new date
-                newData[newDateString] = { 
-                    name: currentMeal.name, 
-                    price: currentMeal.price 
-                };
-                
-                // Clear old date
-                newData[oldDateKey] = { name: "", price: "" };
-                return newData;
-            });
-            alert(`Moved to ${newDateString}`);
+            const newMeals = { ...mealData };
+            const currentName = newMeals[oldDateKey]?.name || "";
+            
+            newMeals[newDateString] = { name: currentName }; // Move text
+            newMeals[oldDateKey] = { name: "" }; // Clear old
+            
+            setMealData(newMeals);
+            saveData(newMeals, groceries);
         };
 
         const addGrocery = () => {
             if (groceryInput.trim() === "") return;
-            setGroceries([...groceries, { 
+            const newGroceries = [...groceries, { 
                 id: Date.now(), 
                 text: groceryInput, 
                 store: selectedStore, 
                 checked: false 
-            }]);
+            }];
+            setGroceries(newGroceries);
             setGroceryInput("");
+            saveData(mealData, newGroceries);
         };
 
-        const toggleGrocery = (id) => setGroceries(groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g));
-        const deleteGrocery = (id) => setGroceries(groceries.filter(g => g.id !== id));
+        const toggleGrocery = (id) => {
+            const newGroceries = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
+            setGroceries(newGroceries);
+            saveData(mealData, newGroceries);
+        };
 
+        const deleteGrocery = (id) => {
+            const newGroceries = groceries.filter(g => g.id !== id);
+            setGroceries(newGroceries);
+            saveData(mealData, newGroceries);
+        };
+
+        // --- COMPUTED ---
         const groceriesByStore = useMemo(() => {
             const groups = {};
             STORES.forEach(s => groups[s] = []);
@@ -177,14 +239,7 @@
             return groups;
         }, [groceries]);
 
-        const weeklyTotal = useMemo(() => {
-            return Array(7).fill(0).map((_, i) => addDays(currentWeekStart, i)).reduce((acc, date) => {
-                const key = formatDateKey(date);
-                return acc + (parseInt(mealData[key]?.price) || 0);
-            }, 0);
-        }, [mealData, currentWeekStart]);
-
-        // --- RENDER ---
+        // --- RENDER: APP ---
         return (
             <div className="min-h-screen max-w-md mx-auto bg-gray-50 shadow-2xl overflow-hidden flex flex-col font-sans">
                 
@@ -193,7 +248,13 @@
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex flex-col">
                             <h1 className="text-xl font-bold tracking-wide">{t.appTitle}</h1>
-                            <span className="text-xs text-teal-200 opacity-80">24G Family Planner</span>
+                            <div className="flex items-center gap-2 text-xs text-teal-200">
+                                {syncStatus === 'saving' || syncStatus === 'error' ? 
+                                    <i className={`ph ${syncStatus === 'error' ? 'ph-warning text-red-300' : 'ph-spinner animate-spin'}`}></i> 
+                                    : <i className="ph ph-cloud-check"></i>
+                                }
+                                <span>{syncStatus === 'error' ? t.error : (syncStatus === 'saving' ? t.saving : t.saved)}</span>
+                            </div>
                         </div>
                         <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="bg-teal-900/40 hover:bg-teal-800 px-3 py-1 rounded text-xs font-bold transition">
                             {lang === 'en' ? 'NO' : 'EN'}
@@ -214,7 +275,6 @@
                     {/* VIEW: CALENDAR */}
                     {view === 'calendar' && (
                         <div className="space-y-4">
-                            {/* Week Nav */}
                             <div className="bg-white rounded-lg p-3 shadow-sm flex justify-between items-center">
                                 <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i className="ph ph-caret-left"></i></button>
                                 <div className="text-center">
@@ -222,17 +282,15 @@
                                         {currentWeekStart.toLocaleDateString(lang === 'en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - 
                                         {addDays(currentWeekStart, 6).toLocaleDateString(lang === 'en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}
                                     </div>
-                                    <div className="text-xs text-teal-600 font-bold mt-1">{t.totalBudget}: {weeklyTotal} kr</div>
                                 </div>
                                 <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i className="ph ph-caret-right"></i></button>
                             </div>
 
-                            {/* Days */}
                             <div className="space-y-3">
                                 {Array(7).fill(0).map((_, i) => {
                                     const date = addDays(currentWeekStart, i);
                                     const dateKey = formatDateKey(date);
-                                    const data = mealData[dateKey] || { name: "", price: "" };
+                                    const data = mealData[dateKey] || { name: "" };
                                     const isToday = formatDateKey(new Date()) === dateKey;
 
                                     return (
@@ -241,8 +299,6 @@
                                                 <span className={`text-xs font-bold uppercase ${isToday ? 'text-teal-600' : 'text-gray-400'}`}>
                                                     {date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long', day:'numeric', month:'numeric'})}
                                                 </span>
-                                                
-                                                {/* CHANGE DATE BUTTON */}
                                                 <div className="relative group">
                                                     <button className="text-gray-300 hover:text-teal-600" title={t.move}>
                                                         <i className="ph ph-calendar-plus text-lg"></i>
@@ -255,22 +311,13 @@
                                                 </div>
                                             </div>
 
-                                            <div className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    value={data.name}
-                                                    onChange={(e) => updateMeal(dateKey, 'name', e.target.value)}
-                                                    placeholder="..."
-                                                    className="flex-1 bg-transparent font-medium text-gray-800 outline-none placeholder-gray-300 border-b border-transparent focus:border-teal-300 transition"
-                                                />
-                                                <input 
-                                                    type="number"
-                                                    value={data.price}
-                                                    onChange={(e) => updateMeal(dateKey, 'price', e.target.value)}
-                                                    placeholder="kr"
-                                                    className="w-16 text-right bg-gray-50 rounded px-2 text-sm text-gray-600 outline-none focus:ring-1 focus:ring-teal-300"
-                                                />
-                                            </div>
+                                            <input 
+                                                type="text" 
+                                                value={data.name}
+                                                onChange={(e) => updateMeal(dateKey, e.target.value)}
+                                                placeholder="..."
+                                                className="w-full bg-transparent font-medium text-lg text-gray-800 outline-none placeholder-gray-300 border-b border-transparent focus:border-teal-300 transition"
+                                            />
                                         </div>
                                     );
                                 })}
@@ -281,8 +328,6 @@
                     {/* VIEW: GROCERIES */}
                     {view === 'groceries' && (
                         <div className="space-y-6">
-                            
-                            {/* Input Box */}
                             <div className="bg-white p-4 rounded-xl shadow-md sticky top-0 z-20 border border-teal-50">
                                 <div className="flex flex-col gap-3">
                                     <select 
@@ -309,7 +354,6 @@
                                 </div>
                             </div>
 
-                            {/* Lists by Store */}
                             {STORES.map(store => {
                                 const items = groceriesByStore[store] || [];
                                 if (items.length === 0) return null;
@@ -336,16 +380,8 @@
                                     </div>
                                 );
                             })}
-
-                            {groceries.length === 0 && (
-                                <div className="text-center text-gray-400 mt-12">
-                                    <i className="ph ph-shopping-cart text-4xl mb-2 opacity-20"></i>
-                                    <p>Ready to plan!</p>
-                                </div>
-                            )}
                         </div>
                     )}
-
                 </main>
             </div>
         );
