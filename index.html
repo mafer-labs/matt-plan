@@ -6,7 +6,14 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Samla">
     <meta name="theme-color" content="#FFFBF7">
+
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
+    <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
+
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiU2FtbGEgRmFtaWx5IE9TIiwic2hvcnRfbmFtZSI6IlNhbWxhIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNGRkZCRjciLCJ0aGVtZV9jb2xvciI6IiNGRkZCRjciLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL21hZmVyLWxhYnMvbWF0dC1wbGFuL21haW4vTG9nby5qcGVnIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL2pwZWcifSx7InNyYyI6Imh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9tYWZlci1sYWJzL21hdHQtcGxhbi9tYWluL0xvZ28uanBlZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9qcGVnIn1dfQ==">
+    
     <title>Samla - Family OS</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -75,6 +82,8 @@
         databaseURL: "https://josefsen-skeie-app-default-rtdb.europe-west1.firebasedatabase.app"
     };
 
+    const LOGO_URL = "https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg";
+
     // --- ICONS ---
     const Icons = {
         House: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M213.38,105.74,138.83,38.27a19.78,19.78,0,0,0-21.66,0L42.62,105.74A19.9,19.9,0,0,0,36,120.6V208a20,20,0,0,0,20,20H96a4,4,0,0,0,4-4V152h56v72a4,4,0,0,0,4,4h40a20,20,0,0,0,20-20V120.6A19.9,19.9,0,0,0,213.38,105.74Z"/></svg>,
@@ -104,7 +113,7 @@
             meals: "Meals", events: "Events",
             today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
             shoppingList: "Shopping List", items: "items", allClear: "All clear!",
-            add: "Add", login: "Who are you?", welcome: "Welcome",
+            add: "Add", login: "Who are you?", welcome: "Welcome to Samla",
             myTasks: "My Tasks", noMyTasks: "Yay! All done!",
             taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
             types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets" },
@@ -122,7 +131,7 @@
             meals: "Matplan", events: "Hendelser",
             today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
             shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
-            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
+            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen til Samla",
             myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!",
             taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
             types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr" },
