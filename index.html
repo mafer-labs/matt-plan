@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Samla</title>
+    <title>Samla - Family OS</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -23,13 +23,12 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
         .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        /* Clean inputs */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         input:focus, select:focus { outline: none; }
-        /* Hide scrollbar but keep functionality */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Mobile touch optimization */
         button { touch-action: manipulation; }
     </style>
 </head>
@@ -55,46 +54,35 @@
 
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // --- CONFIG ---
+    // --- USERS & PERMISSIONS ---
+    const USERS = [
+        { name: "Maria",   role: "admin", color: "bg-pink-100 text-pink-700 border-pink-200" },
+        { name: "Mokka",   role: "admin", color: "bg-purple-100 text-purple-700 border-purple-200" },
+        { name: "Diddri",  role: "admin", color: "bg-blue-100 text-blue-700 border-blue-200" },
+        { name: "Jokkis",  role: "user",  color: "bg-green-100 text-green-700 border-green-200" },
+        { name: "Øystein", role: "user",  color: "bg-orange-100 text-orange-700 border-orange-200" }
+    ];
+
     const STORES = ["Rema 1000 Nordre Åsen", "Kiwi Bjerke", "Joker Disen", "Meny Grefsen", "Europris", "Gigaboks", "Annet"];
-    const THEME = {
-        primary: "bg-slate-900",
-        accent: "text-blue-600",
-        bg: "bg-slate-50"
-    };
 
     const DICTIONARY = {
         en: {
-            home: "Home",
-            plan: "Food",
-            shop: "Shop",
-            today: "Today",
-            dinnerToday: "Dinner Today",
-            nothingPlanned: "Nothing planned yet",
-            shoppingList: "Shopping List",
-            items: "items needed",
-            allClear: "All clear!",
-            add: "Add",
-            move: "Move",
-            addItem: "Add item...",
-            saved: "Synced",
-            error: "Offline"
+            home: "Home", plan: "Food", shop: "Shop", tasks: "Tasks",
+            today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned",
+            shoppingList: "Shopping List", items: "items", allClear: "All clear!",
+            add: "Add", move: "Move", addItem: "Add item...", login: "Who are you?",
+            tasksHeader: "Tasks & Pets", general: "General Tasks", pets: "Koda & Cooper",
+            addTask: "New task...", assign: "Assign to", noTasks: "No active tasks",
+            readOnly: "View Only (Ask Maria/Mokka/Diddri to edit)"
         },
         no: {
-            home: "Hjem",
-            plan: "Mat",
-            shop: "Handle",
-            today: "I dag",
-            dinnerToday: "Dagens Middag",
-            nothingPlanned: "Ingenting planlagt",
-            shoppingList: "Handleliste",
-            items: "ting å kjøpe",
-            allClear: "Alt klart!",
-            add: "Legg til",
-            move: "Flytt",
-            addItem: "Legg til vare...",
-            saved: "Lagret",
-            error: "Frakoblet"
+            home: "Hjem", plan: "Mat", shop: "Handle", tasks: "Oppgaver",
+            today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt",
+            shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
+            add: "Legg til", move: "Flytt", addItem: "Legg til vare...", login: "Hvem er du?",
+            tasksHeader: "Oppgaver & Dyr", general: "Husarbeid", pets: "Koda & Cooper",
+            addTask: "Ny oppgave...", assign: "Ansvarlig", noTasks: "Ingen oppgaver",
+            readOnly: "Kun visning (Spør Maria/Mokka/Diddri for å endre)"
         }
     };
 
@@ -112,31 +100,32 @@
         return result;
     };
 
-    // --- COMPONENTS ---
-    
-    // 1. Bottom Navigation Bar
-    const BottomNav = ({ current, setView, t }) => (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between z-50 text-xs font-medium text-gray-400">
-            <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-2 ${current === 'home' ? 'text-slate-900' : ''}`}>
-                <i className={`ph ${current === 'home' ? 'ph-house-fill' : 'ph-house'} text-2xl`}></i>
-                {t.home}
-            </button>
-            <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-2 ${current === 'calendar' ? 'text-slate-900' : ''}`}>
-                <i className={`ph ${current === 'calendar' ? 'ph-bowl-food-fill' : 'ph-bowl-food'} text-2xl`}></i>
-                {t.plan}
-            </button>
-            <button onClick={() => setView('groceries')} className={`flex flex-col items-center gap-1 p-2 ${current === 'groceries' ? 'text-slate-900' : ''}`}>
-                <i className={`ph ${current === 'groceries' ? 'ph-basket-fill' : 'ph-basket'} text-2xl`}></i>
-                {t.shop}
-            </button>
+    // --- LOGIN SCREEN COMPONENT ---
+    const LoginScreen = ({ onLogin, t }) => (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 fade-in">
+            <h1 className="text-white text-3xl font-bold mb-8">{t.login}</h1>
+            <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+                {USERS.map(user => (
+                    <button 
+                        key={user.name} 
+                        onClick={() => onLogin(user)}
+                        className={`p-6 rounded-2xl font-bold text-lg transition transform active:scale-95 border-2 ${user.color.replace('bg-', 'bg-opacity-10 ')}`}
+                    >
+                        {user.name}
+                    </button>
+                ))}
+            </div>
+            <p className="text-slate-500 mt-10 text-xs">Samla v4.0 • Josefsen-Skeie</p>
         </div>
     );
 
+    // --- MAIN APP ---
     const App = () => {
         const [db, setDb] = useState(null);
+        const [currentUser, setCurrentUser] = useState(null);
         
         // State
-        const [lang, setLang] = useState('no'); // Default to Norwegian for "Samla"
+        const [lang, setLang] = useState('no'); 
         const [view, setView] = useState('home');
         const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         const [syncStatus, setSyncStatus] = useState('saved');
@@ -144,16 +133,23 @@
         // Data
         const [mealData, setMealData] = useState({});
         const [groceries, setGroceries] = useState([]);
+        const [tasks, setTasks] = useState([]);
 
         // Inputs
         const [groceryInput, setGroceryInput] = useState("");
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
+        const [taskInput, setTaskInput] = useState("");
+        const [taskAssignee, setTaskAssignee] = useState(USERS[0].name);
+        const [isPetTask, setIsPetTask] = useState(false);
         
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
 
         // --- FIREBASE ---
         useEffect(() => {
+            const savedUser = localStorage.getItem('samla_user');
+            if (savedUser) setCurrentUser(JSON.parse(savedUser));
+
             try {
                 const { initializeApp, getDatabase, ref, onValue } = window.firebaseModules;
                 const app = initializeApp(firebaseConfig);
@@ -165,53 +161,87 @@
                     if (data) {
                         if (data.meals) setMealData(data.meals);
                         if (data.groceries) setGroceries(data.groceries);
+                        if (data.tasks) setTasks(data.tasks);
                     }
                 });
             } catch (e) { console.error(e); setSyncStatus('error'); }
         }, []);
 
-        const saveData = (newMeals, newGroceries) => {
+        const saveData = (newMeals, newGroceries, newTasks) => {
             if (!db) return;
             setSyncStatus('saving');
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => {
                 const { ref, set } = window.firebaseModules;
-                set(ref(db, 'family_data'), { meals: newMeals, groceries: newGroceries })
+                set(ref(db, 'family_data'), { meals: newMeals, groceries: newGroceries, tasks: newTasks })
                     .then(() => setSyncStatus('saved'))
                     .catch(() => setSyncStatus('error'));
             }, 500);
         };
 
+        const handleLogin = (user) => {
+            setCurrentUser(user);
+            localStorage.setItem('samla_user', JSON.stringify(user));
+        };
+
+        const handleLogout = () => {
+            setCurrentUser(null);
+            localStorage.removeItem('samla_user');
+            setView('home');
+        };
+
         // --- ACTIONS ---
         const updateMeal = (key, val) => {
+            if(currentUser.role !== 'admin') return; // Permission Check
             const next = { ...mealData, [key]: { name: val } };
-            setMealData(next); saveData(next, groceries);
+            setMealData(next); saveData(next, groceries, tasks);
         };
+        
         const changeMealDate = (oldKey, newDate) => {
-            if(!newDate || oldKey === newDate) return;
+            if(currentUser.role !== 'admin' || !newDate || oldKey === newDate) return;
             const next = { ...mealData };
             next[newDate] = { name: next[oldKey]?.name || "" };
             next[oldKey] = { name: "" };
-            setMealData(next); saveData(next, groceries);
+            setMealData(next); saveData(next, groceries, tasks);
         };
+
         const addGrocery = () => {
             if (!groceryInput.trim()) return;
             const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }];
-            setGroceries(next); setGroceryInput(""); saveData(mealData, next);
+            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks);
         };
+        
         const toggleGrocery = (id) => {
             const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
-            setGroceries(next); saveData(mealData, next);
+            setGroceries(next); saveData(mealData, next, tasks);
         };
+        
         const deleteGrocery = (id) => {
             const next = groceries.filter(g => g.id !== id);
-            setGroceries(next); saveData(mealData, next);
+            setGroceries(next); saveData(mealData, next, tasks);
+        };
+
+        const addTask = () => {
+            if (!taskInput.trim()) return;
+            const next = [...tasks, { id: Date.now(), text: taskInput, assignedTo: taskAssignee, isPet: isPetTask, completed: false }];
+            setTasks(next); setTaskInput(""); saveData(mealData, groceries, next);
+        };
+
+        const toggleTask = (id) => {
+            const next = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+            setTasks(next); saveData(mealData, groceries, next);
+        };
+
+        const deleteTask = (id) => {
+            const next = tasks.filter(t => t.id !== id);
+            setTasks(next); saveData(mealData, groceries, next);
         };
 
         // --- COMPUTED ---
         const todayKey = formatDateKey(new Date());
         const todaysDinner = mealData[todayKey]?.name;
         const groceryCount = groceries.filter(g => !g.checked).length;
+        const activeTaskCount = tasks.filter(t => !t.completed).length;
         
         const groceriesByStore = useMemo(() => {
             const g = {}; STORES.forEach(s => g[s] = []);
@@ -219,7 +249,8 @@
             return g;
         }, [groceries]);
 
-        // --- RENDER ---
+        if (!currentUser) return <LoginScreen onLogin={handleLogin} t={t} />;
+
         return (
             <div className="min-h-screen bg-slate-50 pb-24 text-slate-800">
                 
@@ -227,10 +258,15 @@
                 <header className="bg-white p-6 pt-8 shadow-sm flex justify-between items-center sticky top-0 z-40">
                     <div>
                         <h1 className="text-2xl font-black tracking-tight text-slate-900">Samla.</h1>
-                        <p className="text-xs font-medium text-slate-400">Josefsen-Skeie</p>
+                        <div className="flex items-center gap-1">
+                            <span className={`text-xs px-2 py-0.5 rounded border ${currentUser.color}`}>
+                                {currentUser.name}
+                            </span>
+                            <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-500 ml-2">Log out</button>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${syncStatus === 'saved' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}></div>
+                         <div className={`w-2 h-2 rounded-full ${syncStatus === 'saved' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}></div>
                         <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold tracking-wide">
                             {lang === 'en' ? 'EN' : 'NO'}
                         </button>
@@ -239,77 +275,61 @@
 
                 <main className="p-4 max-w-lg mx-auto">
 
-                    {/* VIEW: HOME DASHBOARD */}
+                    {/* DASHBOARD */}
                     {view === 'home' && (
                         <div className="space-y-6 slide-up">
-                            
-                            {/* Card: Today's Dinner */}
                             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3" onClick={() => setView('calendar')}>
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                                    <i className="ph ph-sun"></i> {t.today}
-                                </div>
-                                <div>
-                                    <h2 className="text-3xl font-bold text-slate-800 leading-tight">
-                                        {todaysDinner || <span className="text-slate-300 italic">{t.nothingPlanned}</span>}
-                                    </h2>
-                                </div>
-                                <div className="mt-2 text-blue-600 font-semibold text-sm flex items-center gap-1">
-                                    See full week <i className="ph ph-arrow-right"></i>
-                                </div>
+                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest"><i className="ph ph-sun"></i> {t.today}</div>
+                                <h2 className="text-3xl font-bold text-slate-800 leading-tight">{todaysDinner || <span className="text-slate-300 italic">{t.nothingPlanned}</span>}</h2>
                             </div>
-
-                            {/* Card: Shopping Status */}
-                            <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-lg flex justify-between items-center" onClick={() => setView('groceries')}>
-                                <div>
-                                    <h3 className="text-lg font-bold">{t.shoppingList}</h3>
-                                    <p className="text-slate-400 text-sm">
-                                        {groceryCount > 0 ? `${groceryCount} ${t.items}` : t.allClear}
-                                    </p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg flex flex-col justify-between h-32" onClick={() => setView('groceries')}>
+                                    <i className="ph ph-basket text-2xl opacity-50"></i>
+                                    <div><span className="text-2xl font-bold">{groceryCount}</span> <p className="text-xs text-slate-400">{t.items}</p></div>
                                 </div>
-                                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-                                    <i className="ph ph-basket text-xl"></i>
+                                <div className="bg-orange-50 text-orange-900 border border-orange-100 p-5 rounded-3xl flex flex-col justify-between h-32" onClick={() => setView('tasks')}>
+                                    <i className="ph ph-paw-print text-2xl opacity-50"></i>
+                                    <div><span className="text-2xl font-bold">{activeTaskCount}</span> <p className="text-xs text-orange-700/60">{t.tasks}</p></div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* VIEW: CALENDAR */}
+                    {/* CALENDAR (MEALS) */}
                     {view === 'calendar' && (
                         <div className="space-y-4 slide-up">
-                            {/* Week Nav */}
+                            {currentUser.role !== 'admin' && (
+                                <div className="bg-yellow-50 text-yellow-800 p-3 rounded-xl text-xs text-center border border-yellow-200">
+                                    <i className="ph ph-lock-key mr-1"></i> {t.readOnly}
+                                </div>
+                            )}
                             <div className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm">
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-800"><i className="ph ph-caret-left text-lg"></i></button>
-                                <span className="text-sm font-bold text-slate-700">
-                                    {currentWeekStart.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - {addDays(currentWeekStart, 6).toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}
-                                </span>
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-800"><i className="ph ph-caret-right text-lg"></i></button>
+                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-left text-lg"></i></button>
+                                <span className="text-sm font-bold text-slate-700">{currentWeekStart.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - {addDays(currentWeekStart, 6).toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}</span>
+                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-right text-lg"></i></button>
                             </div>
-
-                            {/* List */}
                             <div className="space-y-3">
                                 {Array(7).fill(0).map((_, i) => {
                                     const date = addDays(currentWeekStart, i);
                                     const dateKey = formatDateKey(date);
                                     const isToday = formatDateKey(new Date()) === dateKey;
                                     const val = mealData[dateKey]?.name || "";
-
                                     return (
                                         <div key={dateKey} className={`p-4 rounded-2xl transition-all ${isToday ? 'bg-white shadow-md ring-2 ring-blue-500/10' : 'bg-white/60 border border-slate-100'}`}>
                                             <div className="flex justify-between mb-2">
-                                                <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>
-                                                    {date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-slate-300 ml-1">{date.getDate()}</span>
-                                                </span>
-                                                <div className="relative group">
-                                                    <i className="ph ph-calendar-plus text-slate-300"></i>
-                                                    <input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => changeMealDate(dateKey, e.target.value)} />
-                                                </div>
+                                                <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-slate-300 ml-1">{date.getDate()}</span></span>
+                                                {currentUser.role === 'admin' && (
+                                                    <div className="relative group"><i className="ph ph-calendar-plus text-slate-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => changeMealDate(dateKey, e.target.value)} /></div>
+                                                )}
                                             </div>
                                             <input 
                                                 type="text" 
                                                 value={val} 
+                                                disabled={currentUser.role !== 'admin'}
                                                 onChange={(e) => updateMeal(dateKey, e.target.value)}
-                                                className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200"
-                                                placeholder="..."
+                                                className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200 disabled:opacity-70"
+                                                placeholder={currentUser.role === 'admin' ? "..." : ""}
                                             />
                                         </div>
                                     );
@@ -318,29 +338,71 @@
                         </div>
                     )}
 
-                    {/* VIEW: GROCERIES */}
-                    {view === 'groceries' && (
+                    {/* TASKS (PETS & CHORES) */}
+                    {view === 'tasks' && (
                         <div className="space-y-6 slide-up">
-                            {/* Add Item */}
                             <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-2 z-30">
                                 <div className="flex flex-col gap-3">
-                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                                        {STORES.map(s => (
-                                            <button key={s} onClick={() => setSelectedStore(s)} 
-                                                className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold border transition ${selectedStore === s ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}>
-                                                {s.split(" ")[0]}
-                                            </button>
-                                        ))}
-                                    </div>
                                     <div className="flex gap-2">
-                                        <input type="text" value={groceryInput} onChange={(e) => setGroceryInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGrocery()}
-                                            placeholder={t.addItem} className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-medium" />
-                                        <button onClick={addGrocery} className="bg-blue-600 text-white w-12 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-95 transition"><i className="ph ph-plus text-xl font-bold"></i></button>
+                                        <button onClick={() => setIsPetTask(false)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${!isPetTask ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-400'}`}>{t.general}</button>
+                                        <button onClick={() => setIsPetTask(true)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${isPetTask ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>🐶 {t.pets}</button>
+                                    </div>
+                                    <select value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 text-xs font-bold text-slate-600">
+                                        {USERS.map(u => <option key={u.name} value={u.name}>{t.assign}: {u.name}</option>)}
+                                    </select>
+                                    <div className="flex gap-2">
+                                        <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.addTask} className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-medium" />
+                                        <button onClick={addTask} className={`w-12 rounded-xl flex items-center justify-center text-white shadow-lg active:scale-95 transition ${isPetTask ? 'bg-orange-500 shadow-orange-200' : 'bg-slate-800 shadow-slate-200'}`}><i className="ph ph-plus text-xl font-bold"></i></button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Lists */}
+                            {/* PET SECTION */}
+                            <div className="space-y-2">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 ml-2">{t.pets}</h3>
+                                {tasks.filter(t => t.isPet).length === 0 && <p className="text-xs text-slate-300 italic ml-2">{t.noTasks}</p>}
+                                {tasks.filter(t => t.isPet).map(task => (
+                                    <div key={task.id} className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border-l-4 border-orange-400">
+                                        <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-orange-100 border-orange-200' : 'border-slate-200'}`}>{task.completed && <i className="ph ph-check text-orange-500 text-xs"></i>}</button>
+                                        <div className={`flex-1 ${task.completed ? 'opacity-40' : ''}`}>
+                                            <p className="text-sm font-bold text-slate-800">{task.text}</p>
+                                            <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{task.assignedTo}</span>
+                                        </div>
+                                        <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* GENERAL SECTION */}
+                            <div className="space-y-2 pt-4">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-2">{t.general}</h3>
+                                {tasks.filter(t => !t.isPet).length === 0 && <p className="text-xs text-slate-300 italic ml-2">{t.noTasks}</p>}
+                                {tasks.filter(t => !t.isPet).map(task => (
+                                    <div key={task.id} className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border-l-4 border-slate-500">
+                                        <button onClick={() => toggleTask(task.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-slate-200 border-slate-200' : 'border-slate-200'}`}>{task.completed && <i className="ph ph-check text-slate-500 text-xs"></i>}</button>
+                                        <div className={`flex-1 ${task.completed ? 'opacity-40' : ''}`}>
+                                            <p className="text-sm font-bold text-slate-800">{task.text}</p>
+                                            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{task.assignedTo}</span>
+                                        </div>
+                                        <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GROCERIES */}
+                    {view === 'groceries' && (
+                        <div className="space-y-6 slide-up">
+                            <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-2 z-30">
+                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
+                                    {STORES.map(s => <button key={s} onClick={() => setSelectedStore(s)} className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold border ${selectedStore === s ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}`}>{s.split(" ")[0]}</button>)}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input type="text" value={groceryInput} onChange={(e) => setGroceryInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGrocery()} placeholder={t.addItem} className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-medium" />
+                                    <button onClick={addGrocery} className="bg-blue-600 text-white w-12 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200"><i className="ph ph-plus text-xl font-bold"></i></button>
+                                </div>
+                            </div>
                             {STORES.map(store => {
                                 const items = groceriesByStore[store] || [];
                                 if(!items.length) return null;
@@ -352,10 +414,8 @@
                                         </div>
                                         <div className="divide-y divide-slate-50">
                                             {items.map(item => (
-                                                <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 group transition">
-                                                    <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${item.checked ? 'bg-slate-200 border-slate-200' : 'border-slate-300'}`}>
-                                                        {item.checked && <i className="ph ph-check text-white text-xs"></i>}
-                                                    </button>
+                                                <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 group">
+                                                    <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${item.checked ? 'bg-slate-200 border-slate-200' : 'border-slate-300'}`}>{item.checked && <i className="ph ph-check text-white text-xs"></i>}</button>
                                                     <span className={`flex-1 text-sm font-medium ${item.checked ? 'text-slate-300 line-through' : 'text-slate-700'}`}>{item.text}</span>
                                                     <button onClick={() => deleteGrocery(item.id)} className="text-slate-300 hover:text-red-500"><i className="ph ph-x"></i></button>
                                                 </div>
@@ -364,19 +424,18 @@
                                     </div>
                                 )
                             })}
-                             {/* Empty State */}
-                             {groceries.length === 0 && (
-                                <div className="text-center py-20 opacity-30">
-                                    <i className="ph ph-shopping-cart text-5xl mb-3 text-slate-400"></i>
-                                    <p className="font-medium text-slate-500">{t.allClear}</p>
-                                </div>
-                            )}
                         </div>
                     )}
+
                 </main>
                 
-                <BottomNav current={view} setView={setView} t={t} />
-
+                {/* BOTTOM NAV */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between z-50 text-xs font-medium text-gray-400">
+                    <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-2 ${view === 'home' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'home' ? 'ph-house-fill' : 'ph-house'} text-2xl`}></i>{t.home}</button>
+                    <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-2 ${view === 'calendar' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'calendar' ? 'ph-bowl-food-fill' : 'ph-bowl-food'} text-2xl`}></i>{t.plan}</button>
+                    <button onClick={() => setView('tasks')} className={`flex flex-col items-center gap-1 p-2 ${view === 'tasks' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'tasks' ? 'ph-check-circle-fill' : 'ph-check-circle'} text-2xl`}></i>{t.tasks}</button>
+                    <button onClick={() => setView('groceries')} className={`flex flex-col items-center gap-1 p-2 ${view === 'groceries' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'groceries' ? 'ph-basket-fill' : 'ph-basket'} text-2xl`}></i>{t.shop}</button>
+                </div>
             </div>
         );
     };
