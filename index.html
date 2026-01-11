@@ -6,11 +6,7 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Samla">
     <meta name="theme-color" content="#FFFBF7">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
-    <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
-    
     <title>Samla - Family OS</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -33,6 +29,18 @@
             -webkit-tap-highlight-color: transparent;
             padding-top: env(safe-area-inset-top);
         }
+        
+        /* Shiny Text Animation */
+        .shiny-text {
+            background: linear-gradient(to right, #FF8FAB, #8BE0FF, #FFD700, #FF8FAB);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            background-size: 200% auto;
+            animation: shine 3s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
         .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -43,20 +51,8 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button { touch-action: manipulation; font-weight: 700; }
         
-        /* Glassmorphism */
-        .glass {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .nav-bar {
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid rgba(0,0,0,0.05);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .nav-bar { background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -66,7 +62,7 @@
 <script type="text/babel">
 
     // ==========================================
-    // ☁️ CONFIGURATION
+    // ☁️ FIREBASE CONFIG
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyD98vj78VL5Vm9xvqvSz3zGBWj34D8vuMo",
@@ -79,9 +75,7 @@
         databaseURL: "https://josefsen-skeie-app-default-rtdb.europe-west1.firebasedatabase.app"
     };
 
-    const LOGO_URL = "https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg";
-    
-    // --- ICONS (Embedded SVG to ensure they always load) ---
+    // --- ICONS ---
     const Icons = {
         House: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M213.38,105.74,138.83,38.27a19.78,19.78,0,0,0-21.66,0L42.62,105.74A19.9,19.9,0,0,0,36,120.6V208a20,20,0,0,0,20,20H96a4,4,0,0,0,4-4V152h56v72a4,4,0,0,0,4,4h40a20,20,0,0,0,20-20V120.6A19.9,19.9,0,0,0,213.38,105.74Z"/></svg>,
         Calendar: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM48,208V96H208V208Z"/></svg>,
@@ -110,7 +104,7 @@
             meals: "Meals", events: "Events",
             today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
             shoppingList: "Shopping List", items: "items", allClear: "All clear!",
-            add: "Add", login: "Who are you?", welcome: "Welcome to Samla",
+            add: "Add", login: "Who are you?", welcome: "Welcome",
             myTasks: "My Tasks", noMyTasks: "Yay! All done!",
             taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
             types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets" },
@@ -120,14 +114,15 @@
             aiPrompt: "Please analyze this recipe URL, give me a shopping list and a short summary of steps: ",
             newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type",
             deleteErr: "Oops! Only the author or Maria can delete this.",
-            weather: "Weather", whiteBoard: "Family Board", writeNote: "Write a note..."
+            weather: "Weather", whiteBoard: "Family Board", writeNote: "Write a note...",
+            lang: "Language"
         },
         no: {
             home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
             meals: "Matplan", events: "Hendelser",
             today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
             shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
-            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen til Samla",
+            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
             myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!",
             taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
             types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr" },
@@ -137,7 +132,8 @@
             aiPrompt: "Vennligst analyser denne oppskriften, gi meg en handleliste og en kort oppsummering av fremgangsmåte: ",
             newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type",
             deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
-            weather: "Været", whiteBoard: "Beskjedtavle", writeNote: "Skriv en beskjed..."
+            weather: "Været", whiteBoard: "Beskjedtavle", writeNote: "Skriv en beskjed...",
+            lang: "Språk"
         }
     };
 
@@ -151,11 +147,17 @@
     // --- CONFETTI ---
     const throwConfetti = () => { confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#FF8FAB', '#8BE0FF', '#FFD700', '#A7F3D0'], disableForReducedMotion: true, scalar: 1.2 }); };
 
-    // --- COMPONENTS ---
-    const LoginScreen = ({ onLogin, t }) => (
-        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-blue-50 flex flex-col items-center justify-center p-6 fade-in text-center">
-            <img src={LOGO_URL} alt="Josefsen-Skeie Logo" className="w-44 h-44 rounded-full shadow-2xl mb-8 border-4 border-white object-cover" />
-            <h1 className="text-3xl font-black mb-2 text-gray-800">{t.welcome}</h1>
+    // --- LOGIN SCREEN ---
+    const LoginScreen = ({ onLogin, t, lang, setLang }) => (
+        <div className="min-h-screen bg-gradient-to-b from-pink-50 to-blue-50 flex flex-col items-center justify-center p-6 fade-in text-center relative">
+            <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="absolute top-10 right-6 bg-white/50 px-3 py-1 rounded-full text-2xl font-bold shadow-sm backdrop-blur-sm">
+                {lang === 'en' ? '🇬🇧' : '🇳🇴'}
+            </button>
+            
+            {/* SHINY BANNER */}
+            <h1 className="text-6xl font-black mb-8 shiny-text tracking-tighter">Samla.</h1>
+            
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">{t.welcome}</h2>
             <p className="text-gray-500 mb-8 font-bold">{t.login}</p>
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                 {USERS.map(user => (
@@ -202,10 +204,9 @@
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
 
-        // --- FETCH WEATHER ---
+        // --- FETCH WEATHER (Forced Celsius) ---
         useEffect(() => {
-            // Oslo Coordinates
-            fetch('https://api.open-meteo.com/v1/forecast?latitude=59.91&longitude=10.75&current_weather=true')
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=59.91&longitude=10.75&current_weather=true&temperature_unit=celsius')
                 .then(res => res.json())
                 .then(data => setWeather(data.current_weather))
                 .catch(err => console.error("Weather error", err));
@@ -275,16 +276,16 @@
         const groceriesByStore = useMemo(() => { const g = {}; STORES.forEach(s => g[s] = []); groceries.forEach(i => { if(g[i.store]) g[i.store].push(i); else { if(!g["Annet"]) g["Annet"]=[]; g["Annet"].push(i); } }); return g; }, [groceries]);
         const getTypeIcon = (type) => { if(type === 'koda') return '🐺'; if(type === 'cooper') return '🐱'; if(type === 'both') return '🐺🐱'; return '🏠'; }
 
-        if (!currentUser) return <LoginScreen onLogin={handleLogin} t={t} />;
+        if (!currentUser) return <LoginScreen onLogin={handleLogin} t={t} lang={lang} setLang={setLang} />;
 
         return (
             <div className="min-h-screen pb-32">
                 <header className="fixed top-0 w-full z-40 px-6 pt-12 pb-4 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-pink-50 rounded-b-[2rem] shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <img src={LOGO_URL} alt="Logo" className="w-10 h-10 rounded-full shadow-sm border-2 border-white object-cover" />
-                        <h1 className="text-2xl font-black tracking-tight text-gray-800">Samla.</h1>
+                    <div className="flex items-center gap-1">
+                        <h1 className="text-2xl font-black shiny-text tracking-tight">Samla.</h1>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="text-xl">{lang === 'en' ? '🇬🇧' : '🇳🇴'}</button>
                         <div className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${syncStatus === 'saved' ? 'bg-teal-400' : 'bg-yellow-400 animate-pulse'}`}></div>
                          <div className="flex items-center gap-2" onClick={handleLogout}>
                             <span className={`text-xs px-3 py-1 rounded-full font-bold border-2 border-white shadow-sm ${currentUser.color}`}>{currentUser.name}</span>
@@ -304,8 +305,8 @@
                                 </div>
                                 {weather && (
                                     <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
-                                        <span className="text-2xl">{weather.temperature > 10 ? '☀️' : '🌥️'}</span>
-                                        <span className="font-bold text-gray-600">{weather.temperature}°</span>
+                                        <span className="text-2xl">{weather.temperature > 10 ? '☀️' : (weather.temperature < 0 ? '❄️' : '🌥️')}</span>
+                                        <span className="font-bold text-gray-600">{weather.temperature}°C</span>
                                     </div>
                                 )}
                             </div>
@@ -455,7 +456,7 @@
                             <div className="space-y-2">
                                 {tasks.sort((a,b) => a.date > b.date ? 1 : -1).map(task => (
                                     <div key={task.id} className={`flex items-start gap-3 card p-4 border-l-8 ${task.completed ? 'border-l-gray-200 opacity-40 shadow-none' : (task.type === 'house' ? 'border-l-gray-600' : 'border-l-orange-400')}`}>
-                                        <button onClick={() => toggleTask(task.id)} className={`mt-1 w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition bg-white ${task.completed ? 'bg-gray-200 border-gray-200' : 'border-gray-200 hover:border-teal-400 hover:bg-teal-50'}`}>{task.completed && <Icons.Check className="w-3 h-3 text-gray-500" />}</button>
+                                        <button onClick={() => toggleTask(task.id)} className={`mt-1 w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition bg-white ${task.completed ? 'bg-gray-200 border-gray-200' : 'border-gray-200 hover:border-teal-400 hover:bg-teal-50'}`}>{task.completed && <Icons.Check className="w-3 h-3 text-white" />}</button>
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <p className={`text-base font-black ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.text}</p>
