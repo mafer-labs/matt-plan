@@ -96,25 +96,39 @@
     const DICTIONARY = {
         en: {
             home: "Home", calendar: "Calendar", shop: "Shop", tasks: "Tasks", recipes: "Recipes",
-            meals: "Meals", events: "Events", today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
-            shoppingList: "Shopping List", items: "items", allClear: "All clear!", add: "Add", login: "Who are you?", welcome: "Welcome",
-            myTasks: "My Tasks", noMyTasks: "Yay! All done!", taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
+            meals: "Meals", events: "Events", today: "Today", tomorrow: "Tomorrow",
+            dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
+            shoppingList: "Shopping List", items: "items", allClear: "All clear!",
+            add: "Add", login: "Who are you?", welcome: "Welcome",
+            myTasks: "My Tasks", noMyTasks: "Yay! All done!",
+            taskInput: "Add a new task...", assign: "For", by: "By", due: "Due",
             types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets" },
-            recipeTitle: "Diddri's Cookbook", addRecipe: "New Recipe", recipeName: "Recipe Name", recipeLink: "Paste Link (URL)", recipeNotes: "Summary / Notes", askAI: "Summarize", viewLink: "Original",
+            recipeTitle: "Diddri's Cookbook", addRecipe: "New Recipe", 
+            recipeName: "Recipe Name", recipeLink: "Paste Link (URL)", recipeNotes: "Summary / Notes",
+            askAI: "Summarize", viewLink: "Original",
             aiPrompt: "Please analyze this recipe URL, give me a shopping list and a short summary of steps: ",
-            newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type", deleteErr: "Oops! Only the author or Maria can delete this.",
-            weather: "Weather", whiteBoard: "Msg Wall", writeNote: "Post a message..."
+            newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type",
+            deleteErr: "Oops! Only the author or Maria can delete this.",
+            weather: "Weather", whiteBoard: "Msg Wall", writeNote: "Post a message...",
+            lang: "Language"
         },
         no: {
             home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
-            meals: "Matplan", events: "Hendelser", today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
-            shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!", add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
-            myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!", taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
+            meals: "Matplan", events: "Hendelser", today: "I dag", tomorrow: "I morgen",
+            dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
+            shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
+            add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
+            myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!",
+            taskInput: "Ny oppgave...", assign: "Til", by: "Av", due: "Frist",
             types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr" },
-            recipeTitle: "Diddris Kokebok", addRecipe: "Ny Oppskrift", recipeName: "Navn på rett", recipeLink: "Lim inn lenke (URL)", recipeNotes: "Oppsummering / Notater", askAI: "Oppsummer", viewLink: "Original",
+            recipeTitle: "Diddris Kokebok", addRecipe: "Ny Oppskrift", 
+            recipeName: "Navn på rett", recipeLink: "Lim inn lenke (URL)", recipeNotes: "Oppsummering / Notater",
+            askAI: "Oppsummer", viewLink: "Original",
             aiPrompt: "Vennligst analyser denne oppskriften, gi meg en handleliste og en kort oppsummering av fremgangsmåte: ",
-            newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type", deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
-            weather: "Været", whiteBoard: "Beskjedvegg", writeNote: "Skriv en melding..."
+            newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type",
+            deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
+            weather: "Været", whiteBoard: "Beskjedvegg", writeNote: "Skriv en melding...",
+            lang: "Språk"
         }
     };
 
@@ -129,33 +143,15 @@
     // --- COMPONENT: SMART INPUT (Prevents Jumping) ---
     const SmartInput = ({ value, onSave, placeholder, disabled, className }) => {
         const [localValue, setLocalValue] = useState(value || "");
-        
-        // Update local state if prop changes from outside (e.g. another user edits), but only if not focused
         useEffect(() => { setLocalValue(value || ""); }, [value]);
-
-        const handleBlur = () => {
-            if (localValue !== value) { onSave(localValue); }
-        };
-
-        return (
-            <input 
-                type="text" 
-                className={className} 
-                value={localValue} 
-                onChange={(e) => setLocalValue(e.target.value)} 
-                onBlur={handleBlur}
-                disabled={disabled}
-                placeholder={placeholder}
-            />
-        );
+        const handleBlur = () => { if (localValue !== value) { onSave(localValue); } };
+        return ( <input type="text" className={className} value={localValue} onChange={(e) => setLocalValue(e.target.value)} onBlur={handleBlur} disabled={disabled} placeholder={placeholder} /> );
     };
 
     // --- LOGIN SCREEN ---
     const LoginScreen = ({ onLogin, t, lang, setLang }) => (
         <div className="min-h-screen bg-gradient-to-b from-pink-50 to-blue-50 flex flex-col items-center justify-center p-6 fade-in text-center relative">
-            <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="absolute top-10 right-6 bg-white/50 px-3 py-1 rounded-full text-2xl font-bold shadow-sm backdrop-blur-sm">
-                {lang === 'en' ? '🇬🇧' : '🇳🇴'}
-            </button>
+            <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="absolute top-10 right-6 bg-white/50 px-3 py-1 rounded-full text-2xl font-bold shadow-sm backdrop-blur-sm">{lang === 'en' ? '🇬🇧' : '🇳🇴'}</button>
             <h1 className="text-6xl font-black mb-8 shiny-text tracking-tighter">Samla.</h1>
             <h2 className="text-2xl font-bold mb-2 text-gray-800">{t.welcome}</h2>
             <p className="text-gray-500 mb-8 font-bold">{t.login}</p>
@@ -183,7 +179,7 @@
         const [tasks, setTasks] = useState([]);
         const [recipes, setRecipes] = useState([]);
         const [events, setEvents] = useState([]);
-        const [messages, setMessages] = useState([]); // Changed from whiteboard string to array
+        const [messages, setMessages] = useState([]); 
 
         // Inputs
         const [taskInput, setTaskInput] = useState("");
@@ -272,7 +268,10 @@
 
         // COMPUTED
         const todayKey = formatDateKey(new Date());
+        const tomorrowKey = formatDateKey(addDays(new Date(), 1)); // ADDED for tomorrow
         const todaysDinner = mealData[todayKey]?.name;
+        const tomorrowsDinner = mealData[tomorrowKey]?.name; // ADDED for tomorrow
+
         const myTasks = tasks.filter(t => t.assignees && t.assignees.includes(currentUser?.name) && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
         const upcomingEvents = events.filter(e => e.date >= todayKey).sort((a,b) => a.date > b.date ? 1 : -1);
         const nextEvent = upcomingEvents[0];
@@ -325,7 +324,10 @@
                                                 <p className="text-sm font-bold text-gray-700">{m.text}</p>
                                                 <p className="text-[10px] text-gray-400 mt-1">{m.author}</p>
                                             </div>
-                                            <button onClick={() => deleteMessage(m.id)} className="text-gray-200 hover:text-red-300"><i className="ph ph-x"></i></button>
+                                            {/* Only Maria can delete */}
+                                            {currentUser.name === "Maria" && (
+                                                <button onClick={() => deleteMessage(m.id)} className="text-gray-200 hover:text-red-300"><i className="ph ph-x"></i></button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -341,7 +343,7 @@
                                     <div>
                                         <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mb-1">{t.nextEvent}</p>
                                         <h3 className="text-xl font-black">{nextEvent.title}</h3>
-                                        <p className="text-sm font-bold opacity-90">{getFriendlyDate(nextEvent.date, lang)}</p>
+                                        <p className="text-sm font-bold opacity-90">{nextEvent.type} • {getFriendlyDate(nextEvent.date, lang)}</p>
                                     </div>
                                     <div className="bg-white/25 w-14 h-14 rounded-full flex items-center justify-center text-3xl">⭐</div>
                                 </div>
@@ -377,6 +379,28 @@
                                         ))}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Quick Stats & DINNER CARD */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-blue-50 to-white border-2 border-blue-100" onClick={() => { setView('calendar'); setCalendarMode('meals'); }}>
+                                    <div className="flex items-center gap-2 text-blue-400 text-xs font-black uppercase"><i className="ph ph-bowl-food-fill"></i> {t.today}</div>
+                                    
+                                    <div>
+                                        <p className="font-black text-2xl leading-tight text-gray-800">{todaysDinner || <span className="text-gray-300 font-bold">{t.nothingPlanned}</span>}</p>
+                                        
+                                        {/* TOMORROW'S DINNER (Small) */}
+                                        <div className="mt-2 pt-2 border-t border-blue-100">
+                                            <p className="text-[10px] font-bold text-blue-300 uppercase">{t.tomorrow}</p>
+                                            <p className="text-xs font-bold text-gray-500 truncate">{tomorrowsDinner || "-"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-pink-50 to-white border-2 border-pink-100" onClick={() => setView('recipes')}>
+                                    <div className="flex items-center gap-2 text-pink-400 text-xs font-black uppercase"><i className="ph ph-book-bookmark-fill"></i> {t.recipes}</div>
+                                    <div><span className="text-4xl font-black text-gray-800">{recipes.length}</span></div>
+                                    <div className="text-xs font-black text-pink-500 bg-pink-100 self-start px-3 py-1 rounded-full">Open &rarr;</div>
+                                </div>
                             </div>
                         </div>
                     )}
