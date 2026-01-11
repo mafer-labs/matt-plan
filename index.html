@@ -97,7 +97,7 @@
         en: {
             home: "Home", calendar: "Calendar", shop: "Shop", tasks: "Tasks", recipes: "Recipes",
             meals: "Meals", events: "Events", today: "Today", tomorrow: "Tomorrow",
-            dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
+            whatsForDinner: "What's for dinner?", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
             shoppingList: "Shopping List", items: "items", allClear: "All clear!",
             add: "Add", login: "Who are you?", welcome: "Welcome",
             myTasks: "My Tasks", noMyTasks: "Yay! All done!",
@@ -115,7 +115,7 @@
         no: {
             home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
             meals: "Matplan", events: "Hendelser", today: "I dag", tomorrow: "I morgen",
-            dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
+            whatsForDinner: "Hva skal vi ha til middag?", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
             shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
             add: "Legg til", login: "Hvem er du?", welcome: "Velkommen",
             myTasks: "Mine Oppgaver", noMyTasks: "Hurra! Alt ferdig!",
@@ -254,7 +254,10 @@
         const toggleAssignee = (name) => { if(taskAssignees.includes(name)) setTaskAssignees(taskAssignees.filter(n => n !== name)); else setTaskAssignees([...taskAssignees, name]); };
         
         const postMessage = () => { if(!messageInput.trim()) return; const next = [...(messages || []), { id: Date.now(), text: messageInput, author: currentUser.name, color: currentUser.color }]; setMessages(next); setMessageInput(""); saveData({ messages: next }); };
-        const deleteMessage = (id) => { const next = messages.filter(m => m.id !== id); setMessages(next); saveData({ messages: next }); };
+        const deleteMessage = (id) => { 
+            if(currentUser.name !== "Maria") { alert(t.deleteErr); return; }
+            const next = messages.filter(m => m.id !== id); setMessages(next); saveData({ messages: next }); 
+        };
 
         const updateMeal = (key, val) => { const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
         const addGrocery = () => { if (!groceryInput.trim()) return; const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }]; setGroceries(next); setGroceryInput(""); saveData({ groceries: next }); };
@@ -268,9 +271,9 @@
 
         // COMPUTED
         const todayKey = formatDateKey(new Date());
-        const tomorrowKey = formatDateKey(addDays(new Date(), 1)); // ADDED for tomorrow
+        const tomorrowKey = formatDateKey(addDays(new Date(), 1));
         const todaysDinner = mealData[todayKey]?.name;
-        const tomorrowsDinner = mealData[tomorrowKey]?.name; // ADDED for tomorrow
+        const tomorrowsDinner = mealData[tomorrowKey]?.name;
 
         const myTasks = tasks.filter(t => t.assignees && t.assignees.includes(currentUser?.name) && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
         const upcomingEvents = events.filter(e => e.date >= todayKey).sort((a,b) => a.date > b.date ? 1 : -1);
@@ -337,17 +340,18 @@
                                 </div>
                             </div>
 
-                            {/* Next Event */}
-                            {nextEvent && (
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-[32px] p-6 shadow-xl shadow-purple-200/50 flex items-center justify-between cursor-pointer border-4 border-white transform hover:scale-[1.02] transition" onClick={() => { setView('calendar'); setCalendarMode('events'); }}>
-                                    <div>
-                                        <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mb-1">{t.nextEvent}</p>
-                                        <h3 className="text-xl font-black">{nextEvent.title}</h3>
-                                        <p className="text-sm font-bold opacity-90">{nextEvent.type} • {getFriendlyDate(nextEvent.date, lang)}</p>
-                                    </div>
-                                    <div className="bg-white/25 w-14 h-14 rounded-full flex items-center justify-center text-3xl">⭐</div>
+                            {/* DINNER HERO CARD (Swapped!) */}
+                            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-[32px] p-6 shadow-xl shadow-purple-200/50 cursor-pointer border-4 border-white transform hover:scale-[1.02] transition" onClick={() => { setView('calendar'); setCalendarMode('meals'); }}>
+                                <div className="flex items-center gap-2 text-white/70 text-xs font-black uppercase mb-2"><i className="ph ph-bowl-food-fill"></i> {t.whatsForDinner}</div>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-2xl font-black">{todaysDinner || t.nothingPlanned}</h3>
+                                    <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center text-3xl">🍽️</div>
                                 </div>
-                            )}
+                                <div className="mt-4 pt-3 border-t border-white/20 flex items-center gap-2">
+                                    <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{t.tomorrow}:</span>
+                                    <span className="text-sm font-bold truncate opacity-90">{tomorrowsDinner || "-"}</span>
+                                </div>
+                            </div>
 
                             {/* My Tasks */}
                             <div>
@@ -381,22 +385,25 @@
                                 )}
                             </div>
 
-                            {/* Quick Stats & DINNER CARD */}
+                            {/* GRID: Next Event (Swapped!) & Recipes */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-blue-50 to-white border-2 border-blue-100" onClick={() => { setView('calendar'); setCalendarMode('meals'); }}>
-                                    <div className="flex items-center gap-2 text-blue-400 text-xs font-black uppercase"><i className="ph ph-bowl-food-fill"></i> {t.today}</div>
-                                    
+                                {/* Next Event Card (Now Small) */}
+                                <div className="card p-5 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-blue-50 to-white border-2 border-blue-100" onClick={() => { setView('calendar'); setCalendarMode('events'); }}>
+                                    <div className="flex items-center gap-2 text-blue-400 text-xs font-black uppercase"><i className="ph ph-calendar-star-fill"></i> {t.nextEvent}</div>
                                     <div>
-                                        <p className="font-black text-2xl leading-tight text-gray-800">{todaysDinner || <span className="text-gray-300 font-bold">{t.nothingPlanned}</span>}</p>
-                                        
-                                        {/* TOMORROW'S DINNER (Small) */}
-                                        <div className="mt-2 pt-2 border-t border-blue-100">
-                                            <p className="text-[10px] font-bold text-blue-300 uppercase">{t.tomorrow}</p>
-                                            <p className="text-xs font-bold text-gray-500 truncate">{tomorrowsDinner || "-"}</p>
-                                        </div>
+                                        {nextEvent ? (
+                                            <>
+                                                <p className="font-black text-lg leading-tight text-gray-800 line-clamp-2">{nextEvent.title}</p>
+                                                <p className="text-[10px] font-bold text-blue-400 mt-1">{nextEvent.type} • {getFriendlyDate(nextEvent.date, lang)}</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-gray-300 font-bold italic">-</p>
+                                        )}
                                     </div>
+                                    <div className="text-xs font-black text-blue-500 bg-blue-100 self-start px-3 py-1 rounded-full">See All &rarr;</div>
                                 </div>
-                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-pink-50 to-white border-2 border-pink-100" onClick={() => setView('recipes')}>
+
+                                <div className="card p-5 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-pink-50 to-white border-2 border-pink-100" onClick={() => setView('recipes')}>
                                     <div className="flex items-center gap-2 text-pink-400 text-xs font-black uppercase"><i className="ph ph-book-bookmark-fill"></i> {t.recipes}</div>
                                     <div><span className="text-4xl font-black text-gray-800">{recipes.length}</span></div>
                                     <div className="text-xs font-black text-pink-500 bg-pink-100 self-start px-3 py-1 rounded-full">Open &rarr;</div>
@@ -490,10 +497,14 @@
                                         return ( <button key={u.name} onClick={() => toggleAssignee(u.name)} className={`w-11 h-11 rounded-full border-4 flex items-center justify-center text-xs font-black transition shadow-sm ${isSelected ? u.color + ' ring-2 ring-offset-2 ring-pink-200 scale-110' : 'bg-white text-gray-300 border-white'}`}>{u.name.substring(0,2)}</button> )
                                     })}
                                 </div>
-                                <div className="flex gap-2">
-                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-11 bg-white rounded-2xl px-2 py-3 text-xs font-bold text-transparent bg-[url('https://unpkg.com/@phosphor-icons/web/assets/calendar-fill.svg')] bg-no-repeat bg-center shadow-sm" />
-                                    <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-white rounded-2xl px-5 py-3 text-sm font-bold placeholder-gray-300 shadow-sm" />
-                                    <button onClick={addTask} className="bg-pink-500 text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-200 active:scale-95 transition text-xl font-bold">+</button>
+                                <div className="flex gap-2 items-center">
+                                    {/* FIXED DATE BUTTON FOR MOBILE */}
+                                    <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-2xl">
+                                        <Icons.Calendar className="w-6 h-6 text-stone-500" />
+                                        <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="absolute inset-0 opacity-0 z-10 w-full h-full cursor-pointer" />
+                                    </div>
+                                    <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-white rounded-2xl px-5 py-3 text-sm font-bold placeholder-gray-300 shadow-sm min-w-0" />
+                                    <button onClick={addTask} className="bg-pink-500 text-white w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-lg shadow-pink-200 active:scale-95 transition text-xl font-bold">+</button>
                                 </div>
                             </div>
                             <div className="space-y-2">
