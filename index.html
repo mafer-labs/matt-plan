@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Middag - Family Meal Planner</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdfa; }
+        .card-hover:hover { transform: translateY(-2px); transition: all 0.2s; }
+        .tab-active { border-bottom: 3px solid #0d9488; color: #0d9488; font-weight: bold; }
+        .tab-inactive { color: #6b7280; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+    const { useState, useEffect } = React;
+
+    // --- DATA: LOCATIONS ---
+    const NEARBY_STORES = [
+        { name: "Kiwi Grefsenveien", dist: "0.6 km", type: "Daily", icon: "ph-shopping-cart" },
+        { name: "Rema 1000 Storo", dist: "1.2 km", type: "Budget", icon: "ph-coins" },
+        { name: "Meny Storo", dist: "1.2 km", type: "Premium", icon: "ph-star" },
+        { name: "Europris Bryn", dist: "6.5 km", type: "Bulk/Home", icon: "ph-package" },
+        { name: "Gigaboks Lørenskog", dist: "9.0 km", type: "Bulk", icon: "ph-warehouse" },
+    ];
+
+    // --- TRANSLATIONS ---
+    const DICTIONARY = {
+        en: {
+            appTitle: "Family Middag",
+            tabs: ["Planner", "Groceries", "Stores & Offers"],
+            weeklyPlan: "Weekly Plan",
+            totalBudget: "Est. Cost:",
+            days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            placeholders: ["Spaghetti...", "Fish cakes...", "Taco...", "Soup...", "Pizza...", "Steak...", "Leftovers..."],
+            shoppingList: "Shopping List",
+            addItem: "Add item (e.g. Milk)...",
+            clear: "Reset Week",
+            share: "Copy for WhatsApp",
+            shareMsg: "Plan copied to clipboard!",
+            localStores: "Stores near Disengrenda",
+            checkOffers: "Check Offers (Tilbud)",
+            pricePlaceholder: "kr"
+        },
+        no: {
+            appTitle: "Middagsplanlegger",
+            tabs: ["Ukeplan", "Handleliste", "Butikker & Tilbud"],
+            weeklyPlan: "Ukeplan",
+            totalBudget: "Est. Pris:",
+            days: ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"],
+            placeholders: ["Spaghetti...", "Fiskekaker...", "Taco...", "Suppe...", "Pizza...", "Biff...", "Rester..."],
+            shoppingList: "Handleliste",
+            addItem: "Legg til vare (f.eks Melk)...",
+            clear: "Nullstill Uke",
+            share: "Kopier til WhatsApp",
+            shareMsg: "Plan kopiert til utklippstavlen!",
+            localStores: "Butikker nær Disengrenda",
+            checkOffers: "Sjekk Tilbudsaviser",
+            pricePlaceholder: "kr"
+        }
+    };
+
+    const App = () => {
+        // --- STATE ---
+        const [lang, setLang] = useState('en'); 
+        const [view, setView] = useState('planner'); // planner, groceries, stores
+        
+        // Data State
+        const [meals, setMeals] = useState(Array(7).fill({ name: "", price: "" }));
+        const [groceries, setGroceries] = useState([]);
+        const [groceryInput, setGroceryInput] = useState("");
+        const [notification, setNotification] = useState("");
+
+        const t = DICTIONARY[lang];
+
+        // --- PERSISTENCE ---
+        useEffect(() => {
+            const savedMeals = JSON.parse(localStorage.getItem('middag_meals_v2'));
+            const savedGroceries = JSON.parse(localStorage.getItem('middag_groceries_v2'));
+            
+            if (savedMeals) setMeals(savedMeals);
+            if (savedGroceries) setGroceries(savedGroceries);
+        }, []);
+
+        useEffect(() => {
+            localStorage.setItem('middag_meals_v2', JSON.stringify(meals));
+            localStorage.setItem('middag_groceries_v2', JSON.stringify(groceries));
+        }, [meals, groceries]);
+
+        // --- HELPERS ---
+        const calculateTotal = () => {
+            return meals.reduce((acc, curr) => acc + (parseInt(curr.price) || 0), 0);
+        };
+
+        const copyToClipboard = () => {
+            const planText = meals.map((m, i) => `${t.days[i]}: ${m.name || '-'}`).join('\n');
+            const listText = groceries.map(g => `- ${g.text}`).join('\n');
+            const fullText = `📅 *${t.weeklyPlan}*\n${planText}\n\n🛒 *${t.shoppingList}*\n${listText}`;
+            
+            navigator.clipboard.writeText(fullText);
+            setNotification(t.shareMsg);
+            setTimeout(() => setNotification(""), 3000);
+        };
+
+        // --- HANDLERS ---
+        const updateMealName = (index, val) => {
+            const newMeals = [...meals];
+            newMeals[index] = { ...newMeals[index], name: val };
+            setMeals(newMeals);
+        };
+
+        const updateMealPrice = (index, val) => {
+            const newMeals = [...meals];
+            newMeals[index] = { ...newMeals[index], price: val };
+            setMeals(newMeals);
+        };
+
+        const addGrocery = (e) => {
+            if (e.key === 'Enter' && groceryInput.trim() !== "") {
+                setGroceries([...groceries, { id: Date.now(), text: groceryInput, checked: false }]);
+                setGroceryInput("");
+            }
+        };
+
+        const toggleGrocery = (id) => {
+            setGroceries(groceries.map(item => 
+                item.id === id ? { ...item, checked: !item.checked } : item
+            ));
+        };
+
+        const deleteGrocery = (id) => {
+            setGroceries(groceries.filter(item => item.id !== id));
+        };
+
+        // --- RENDER ---
+        return (
+            <div className="min-h-screen max-w-md mx-auto bg-gray-50 shadow-2xl overflow-hidden flex flex-col relative">
+                
+                {/* NOTIFICATION TOAST */}
+                {notification && (
+                    <div className="absolute top-4 left-4 right-4 bg-teal-800 text-white p-3 rounded-lg shadow-xl text-center z-50 animate-bounce">
+                        {notification}
+                    </div>
+                )}
+
+                {/* HEADER */}
+                <header className="bg-teal-700 text-white p-6 rounded-b-3xl shadow-md z-10">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h1 className="text-2xl font-bold">{t.appTitle}</h1>
+                            <p className="text-teal-200 text-sm">Disengrenda 24G, Oslo</p>
+                        </div>
+                        <button 
+                            onClick={() => setLang(lang === 'en' ? 'no' : 'en')}
+                            className="bg-teal-800/50 px-3 py-1 rounded text-xs uppercase tracking-widest hover:bg-teal-600 transition"
+                        >
+                            {lang === 'en' ? 'NO' : 'EN'}
+                        </button>
+                    </div>
+
+                    {/* TABS */}
+                    <div className="flex mt-6 gap-6 text-sm font-medium">
+                        <button onClick={() => setView('planner')} className={view === 'planner' ? 'text-white border-b-2 border-white pb-1' : 'text-teal-200 pb-1'}>{t.tabs[0]}</button>
+                        <button onClick={() => setView('groceries')} className={view === 'groceries' ? 'text-white border-b-2 border-white pb-1' : 'text-teal-200 pb-1'}>{t.tabs[1]}</button>
+                        <button onClick={() => setView('stores')} className={view === 'stores' ? 'text-white border-b-2 border-white pb-1' : 'text-teal-200 pb-1'}>{t.tabs[2]}</button>
+                    </div>
+                </header>
+
+                <main className="flex-1 overflow-y-auto p-4 pb-20 space-y-4">
+                    
+                    {/* VIEW: PLANNER */}
+                    {view === 'planner' && (
+                        <>
+                            <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-teal-100">
+                                <div>
+                                    <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t.totalBudget}</span>
+                                    <div className="text-2xl font-bold text-teal-700">{calculateTotal()} kr</div>
+                                </div>
+                                <button onClick={copyToClipboard} className="bg-teal-100 text-teal-700 p-2 rounded-full hover:bg-teal-200 transition">
+                                    <i className="ph ph-share-network text-xl"></i>
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {t.days.map((day, i) => (
+                                    <div key={i} className="bg-white p-3 rounded-xl shadow-sm border-l-4 border-teal-500 flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-xs shrink-0">
+                                            {day.substring(0,1)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-gray-400 font-bold uppercase">{day}</p>
+                                            <input 
+                                                type="text" 
+                                                className="w-full font-medium text-gray-700 outline-none placeholder-gray-300 bg-transparent"
+                                                placeholder={t.placeholders[i]}
+                                                value={meals[i].name}
+                                                onChange={(e) => updateMealName(i, e.target.value)}
+                                            />
+                                        </div>
+                                        <input 
+                                            type="number" 
+                                            className="w-16 text-right text-sm text-gray-500 bg-gray-50 rounded p-1 outline-none focus:ring-1 ring-teal-300"
+                                            placeholder="kr"
+                                            value={meals[i].price}
+                                            onChange={(e) => updateMealPrice(i, e.target.value)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <button onClick={() => { if(confirm('Reset?')) setMeals(Array(7).fill({name:"", price:""})) }} className="w-full text-center text-gray-400 text-sm mt-4 hover:text-red-500">
+                                {t.clear}
+                            </button>
+                        </>
+                    )}
+
+                    {/* VIEW: GROCERIES */}
+                    {view === 'groceries' && (
+                        <div className="bg-white rounded-xl shadow-sm p-4 min-h-[400px]">
+                            <h2 className="text-lg font-bold text-gray-700 mb-4">{t.shoppingList}</h2>
+                            <input 
+                                type="text" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4 focus:ring-2 focus:ring-teal-500 outline-none"
+                                placeholder={t.addItem}
+                                value={groceryInput}
+                                onChange={(e) => setGroceryInput(e.target.value)}
+                                onKeyDown={addGrocery}
+                            />
+                            <ul className="space-y-2">
+                                {groceries.map(item => (
+                                    <li key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded group">
+                                        <button 
+                                            onClick={() => toggleGrocery(item.id)}
+                                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${item.checked ? 'bg-teal-500 border-teal-500' : 'border-gray-300'}`}
+                                        >
+                                            {item.checked && <i className="ph ph-check text-white text-xs"></i>}
+                                        </button>
+                                        <span className={`flex-1 ${item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                                            {item.text}
+                                        </span>
+                                        <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 hover:text-red-500">
+                                            <i className="ph ph-trash"></i>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* VIEW: STORES */}
+                    {view === 'stores' && (
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                                    <i className="ph ph-tag"></i> {t.checkOffers}
+                                </h3>
+                                <div className="flex gap-2">
+                                    <a href="https://mattilbud.no" target="_blank" className="flex-1 bg-white text-blue-600 py-2 rounded shadow-sm text-center text-sm font-semibold hover:bg-blue-50">
+                                        Mattilbud
+                                    </a>
+                                    <a href="https://kassal.app" target="_blank" className="flex-1 bg-white text-green-600 py-2 rounded shadow-sm text-center text-sm font-semibold hover:bg-green-50">
+                                        Kassalapp
+                                    </a>
+                                </div>
+                            </div>
+
+                            <h3 className="font-bold text-gray-700 ml-1">{t.localStores}</h3>
+                            {NEARBY_STORES.map((store, i) => (
+                                <div key={i} className="bg-white p-4 rounded-xl shadow-sm flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                                        <i className={`ph ${store.icon} text-xl`}></i>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-800">{store.name}</h4>
+                                        <div className="flex gap-2 text-xs mt-1">
+                                            <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded">{store.dist}</span>
+                                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{store.type}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                </main>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+
+</script>
+</body>
+</html>
