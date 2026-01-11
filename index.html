@@ -26,7 +26,7 @@
         .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        input:focus, select:focus { outline: none; }
+        input:focus, select:focus, textarea:focus { outline: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button { touch-action: manipulation; }
@@ -64,25 +64,39 @@
     ];
 
     const STORES = ["Rema 1000 Nordre Åsen", "Kiwi Bjerke", "Joker Disen", "Meny Grefsen", "Europris", "Gigaboks", "Annet"];
+    const RECIPE_CATS = ["Dinner", "Baking", "Dessert", "Breakfast", "Snack"];
+    const EVENT_TYPES = ["Birthday", "Travel", "Appointment", "Other"];
 
     const DICTIONARY = {
         en: {
-            home: "Home", plan: "Food", shop: "Shop", tasks: "Tasks",
-            today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned",
+            home: "Home", calendar: "Calendar", shop: "Shop", tasks: "Tasks", recipes: "Recipes",
+            meals: "Meals", events: "Events",
+            today: "Today", dinnerToday: "Dinner Today", nothingPlanned: "Nothing planned", nextEvent: "Up Next",
             shoppingList: "Shopping List", items: "items", allClear: "All clear!",
             add: "Add", login: "Who are you?", 
             myTasks: "My Pending Tasks", noMyTasks: "You are free! No tasks.",
             taskInput: "New task...", assign: "Assign to", by: "By", due: "Due",
-            types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets (Both)" }
+            types: { house: "House", koda: "Koda", cooper: "Cooper", both: "Pets (Both)" },
+            recipeTitle: "Diddri's Cookbook", addRecipe: "New Recipe", 
+            recipeName: "Recipe Name", recipeLink: "Paste Link (URL)", recipeNotes: "Summary / Notes",
+            askAI: "Ask Gemini to Summarize", viewLink: "View Original",
+            aiPrompt: "Please analyze this recipe URL, give me a shopping list and a short summary of steps: ",
+            newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type"
         },
         no: {
-            home: "Hjem", plan: "Mat", shop: "Handle", tasks: "Oppgaver",
-            today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt",
+            home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
+            meals: "Matplan", events: "Hendelser",
+            today: "I dag", dinnerToday: "Dagens Middag", nothingPlanned: "Ingenting planlagt", nextEvent: "Neste hendelse",
             shoppingList: "Handleliste", items: "ting", allClear: "Alt klart!",
             add: "Legg til", login: "Hvem er du?", 
             myTasks: "Mine Oppgaver", noMyTasks: "Du er fri! Ingen oppgaver.",
             taskInput: "Ny oppgave...", assign: "Ansvarlig", by: "Av", due: "Frist",
-            types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr (Begge)" }
+            types: { house: "Hus", koda: "Koda", cooper: "Cooper", both: "Dyr (Begge)" },
+            recipeTitle: "Diddris Kokebok", addRecipe: "Ny Oppskrift", 
+            recipeName: "Navn på rett", recipeLink: "Lim inn lenke (URL)", recipeNotes: "Oppsummering / Notater",
+            askAI: "Spør Gemini", viewLink: "Se Original",
+            aiPrompt: "Vennligst analyser denne oppskriften, gi meg en handleliste og en kort oppsummering av fremgangsmåte: ",
+            newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type"
         }
     };
 
@@ -123,7 +137,7 @@
                     </button>
                 ))}
             </div>
-            <p className="text-slate-500 mt-10 text-xs">Samla v5.0 • Josefsen-Skeie</p>
+            <p className="text-slate-500 mt-10 text-xs">Samla v7.0 • Josefsen-Skeie</p>
         </div>
     );
 
@@ -135,6 +149,7 @@
         // State
         const [lang, setLang] = useState('no'); 
         const [view, setView] = useState('home');
+        const [calendarMode, setCalendarMode] = useState('meals'); // 'meals' or 'events'
         const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         const [syncStatus, setSyncStatus] = useState('saved');
 
@@ -142,16 +157,28 @@
         const [mealData, setMealData] = useState({});
         const [groceries, setGroceries] = useState([]);
         const [tasks, setTasks] = useState([]);
+        const [recipes, setRecipes] = useState([]);
+        const [events, setEvents] = useState([]);
 
-        // Task Inputs
+        // Inputs - General
         const [taskInput, setTaskInput] = useState("");
-        const [taskAssignee, setTaskAssignee] = useState("");
+        const [taskAssignees, setTaskAssignees] = useState([]); // Array of names
         const [taskDate, setTaskDate] = useState(formatDateKey(new Date()));
-        const [taskType, setTaskType] = useState("house"); // house, koda, cooper, both
-        
-        // Grocery Inputs
+        const [taskType, setTaskType] = useState("house");
         const [groceryInput, setGroceryInput] = useState("");
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
+
+        // Inputs - Recipe
+        const [showRecipeForm, setShowRecipeForm] = useState(false);
+        const [rName, setRName] = useState("");
+        const [rLink, setRLink] = useState("");
+        const [rNotes, setRNotes] = useState("");
+        const [rCat, setRCat] = useState(RECIPE_CATS[0]);
+
+        // Inputs - Events
+        const [eventName, setEventName] = useState("");
+        const [eventDate, setEventDate] = useState(formatDateKey(new Date()));
+        const [eventType, setEventType] = useState(EVENT_TYPES[0]);
 
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
@@ -162,9 +189,9 @@
             if (savedUser) {
                 const parsed = JSON.parse(savedUser);
                 setCurrentUser(parsed);
-                setTaskAssignee(parsed.name);
+                setTaskAssignees([parsed.name]); // Default to self
             } else {
-                setTaskAssignee(USERS[0].name);
+                setTaskAssignees([USERS[0].name]);
             }
 
             try {
@@ -179,26 +206,34 @@
                         if (data.meals) setMealData(data.meals);
                         if (data.groceries) setGroceries(data.groceries);
                         if (data.tasks) setTasks(data.tasks);
+                        if (data.recipes) setRecipes(data.recipes);
+                        if (data.events) setEvents(data.events);
                     }
                 });
             } catch (e) { console.error(e); setSyncStatus('error'); }
         }, []);
 
-        const saveData = (newMeals, newGroceries, newTasks) => {
+        const saveData = (newMeals, newGroceries, newTasks, newRecipes, newEvents) => {
             if (!db) return;
             setSyncStatus('saving');
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => {
                 const { ref, set } = window.firebaseModules;
-                set(ref(db, 'family_data'), { meals: newMeals, groceries: newGroceries, tasks: newTasks })
-                    .then(() => setSyncStatus('saved'))
-                    .catch(() => setSyncStatus('error'));
+                set(ref(db, 'family_data'), { 
+                    meals: newMeals, 
+                    groceries: newGroceries, 
+                    tasks: newTasks,
+                    recipes: newRecipes,
+                    events: newEvents
+                })
+                .then(() => setSyncStatus('saved'))
+                .catch(() => setSyncStatus('error'));
             }, 500);
         };
 
         const handleLogin = (user) => {
             setCurrentUser(user);
-            setTaskAssignee(user.name);
+            setTaskAssignees([user.name]);
             localStorage.setItem('samla_user', JSON.stringify(user));
         };
 
@@ -208,62 +243,109 @@
             setView('home');
         };
 
-        // --- TASK ACTIONS ---
+        // --- ACTIONS ---
         const addTask = () => {
-            if (!taskInput.trim()) return;
+            if (!taskInput.trim() || taskAssignees.length === 0) return;
             const next = [...tasks, { 
-                id: Date.now(), 
-                text: taskInput, 
-                assignee: taskAssignee, // Who does it
-                author: currentUser.name, // Who created it
-                date: taskDate,
-                type: taskType,
-                completed: false 
+                id: Date.now(), text: taskInput, assignees: taskAssignees, author: currentUser.name, 
+                date: taskDate, type: taskType, completed: false 
             }];
-            setTasks(next); setTaskInput(""); saveData(mealData, groceries, next);
+            setTasks(next); setTaskInput(""); saveData(mealData, groceries, next, recipes, events);
         };
-
         const toggleTask = (id) => {
             const next = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-            setTasks(next); saveData(mealData, groceries, next);
+            setTasks(next); saveData(mealData, groceries, next, recipes, events);
         };
-
         const deleteTask = (id) => {
             const next = tasks.filter(t => t.id !== id);
-            setTasks(next); saveData(mealData, groceries, next);
+            setTasks(next); saveData(mealData, groceries, next, recipes, events);
         };
 
-        // --- OTHER ACTIONS ---
+        const toggleAssignee = (name) => {
+            if(taskAssignees.includes(name)) {
+                setTaskAssignees(taskAssignees.filter(n => n !== name));
+            } else {
+                setTaskAssignees([...taskAssignees, name]);
+            }
+        };
+
         const updateMeal = (key, val) => {
             if(currentUser.role !== 'admin') return;
             const next = { ...mealData, [key]: { name: val } };
-            setMealData(next); saveData(next, groceries, tasks);
+            setMealData(next); saveData(next, groceries, tasks, recipes, events);
         };
+
         const addGrocery = () => {
             if (!groceryInput.trim()) return;
             const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }];
-            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks);
+            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks, recipes, events);
         };
         const toggleGrocery = (id) => {
             const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
-            setGroceries(next); saveData(mealData, next, tasks);
+            setGroceries(next); saveData(mealData, next, tasks, recipes, events);
         };
         const deleteGrocery = (id) => {
             const next = groceries.filter(g => g.id !== id);
-            setGroceries(next); saveData(mealData, next, tasks);
+            setGroceries(next); saveData(mealData, next, tasks, recipes, events);
+        };
+
+        const addRecipe = () => {
+            if(!rName.trim()) return;
+            const next = [...recipes, {
+                id: Date.now(), name: rName, link: rLink, notes: rNotes, category: rCat, author: currentUser.name
+            }];
+            setRecipes(next);
+            setRName(""); setRLink(""); setRNotes(""); setShowRecipeForm(false);
+            saveData(mealData, groceries, tasks, next, events);
+        };
+        const deleteRecipe = (id) => {
+            if(confirm("Delete recipe?")) {
+                const next = recipes.filter(r => r.id !== id);
+                setRecipes(next); saveData(mealData, groceries, tasks, next, events);
+            }
+        };
+
+        const addEvent = () => {
+            if(!eventName.trim()) return;
+            const next = [...events, {
+                id: Date.now(), title: eventName, date: eventDate, type: eventType, author: currentUser.name
+            }];
+            setEvents(next);
+            setEventName("");
+            saveData(mealData, groceries, tasks, recipes, next);
+        };
+        const deleteEvent = (id) => {
+            const next = events.filter(e => e.id !== id);
+            setEvents(next); saveData(mealData, groceries, tasks, recipes, next);
+        };
+
+        const openAIHelp = () => {
+            if(!rLink) { alert("Paste a link first!"); return; }
+            const prompt = `${t.aiPrompt} ${rLink}`;
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("Prompt copied! Pasting into Gemini...");
+                window.open(`https://gemini.google.com/app`, '_blank');
+            });
         };
 
         // --- COMPUTED ---
         const todayKey = formatDateKey(new Date());
         const todaysDinner = mealData[todayKey]?.name;
-        const myTasks = tasks.filter(t => t.assignee === currentUser?.name && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
+        
+        // Multi-assignee check
+        const myTasks = tasks.filter(t => t.assignees && t.assignees.includes(currentUser?.name) && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
+        
+        const upcomingEvents = events
+            .filter(e => e.date >= todayKey)
+            .sort((a,b) => a.date > b.date ? 1 : -1);
+        const nextEvent = upcomingEvents[0];
+
         const groceriesByStore = useMemo(() => {
             const g = {}; STORES.forEach(s => g[s] = []);
             groceries.forEach(i => { if(g[i.store]) g[i.store].push(i); else { if(!g["Annet"]) g["Annet"]=[]; g["Annet"].push(i); } });
             return g;
         }, [groceries]);
 
-        // Task Icons
         const getTypeIcon = (type) => {
             if(type === 'koda') return '🐺';
             if(type === 'cooper') return '🐱';
@@ -281,17 +363,12 @@
                     <div>
                         <h1 className="text-2xl font-black tracking-tight text-slate-900">Samla.</h1>
                         <div className="flex items-center gap-1">
-                            <span className={`text-xs px-2 py-0.5 rounded border ${currentUser.color}`}>
-                                {currentUser.name}
-                            </span>
-                            <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-500 ml-2">Log out</button>
+                            <span className={`text-xs px-2 py-0.5 rounded border ${currentUser.color}`}>{currentUser.name}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                          <div className={`w-2 h-2 rounded-full ${syncStatus === 'saved' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}></div>
-                        <button onClick={() => setLang(lang === 'en' ? 'no' : 'en')} className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold tracking-wide">
-                            {lang === 'en' ? 'EN' : 'NO'}
-                        </button>
+                         <button onClick={handleLogout} className="text-xl text-slate-300 hover:text-red-500"><i className="ph ph-sign-out"></i></button>
                     </div>
                 </header>
 
@@ -301,7 +378,21 @@
                     {view === 'home' && (
                         <div className="space-y-6 slide-up">
                             
-                            {/* My Tasks Section */}
+                            {/* Upcoming Event Alert */}
+                            {nextEvent && (
+                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-5 text-white shadow-lg flex items-center justify-between" onClick={() => { setView('calendar'); setCalendarMode('events'); }}>
+                                    <div>
+                                        <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">{t.nextEvent}</p>
+                                        <h3 className="text-xl font-bold">{nextEvent.title}</h3>
+                                        <p className="text-sm opacity-90">{getFriendlyDate(nextEvent.date, lang)}</p>
+                                    </div>
+                                    <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center">
+                                        <i className="ph ph-calendar-star text-2xl"></i>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* My Tasks */}
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800 mb-3">{t.myTasks}</h2>
                                 {myTasks.length === 0 ? (
@@ -330,17 +421,109 @@
                                 )}
                             </div>
 
-                            {/* Info Cards */}
+                            {/* Quick Stats */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between h-32" onClick={() => setView('calendar')}>
+                                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between h-32" onClick={() => { setView('calendar'); setCalendarMode('meals'); }}>
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase"><i className="ph ph-bowl-food"></i> {t.today}</div>
                                     <p className="font-bold text-lg leading-tight">{todaysDinner || t.nothingPlanned}</p>
                                 </div>
-                                <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg flex flex-col justify-between h-32" onClick={() => setView('groceries')}>
-                                    <i className="ph ph-basket text-2xl opacity-50"></i>
-                                    <div><span className="text-2xl font-bold">{groceries.length}</span> <p className="text-xs text-slate-400">{t.items}</p></div>
+                                <div className="bg-rose-50 text-rose-900 border border-rose-100 p-5 rounded-3xl shadow-sm flex flex-col justify-between h-32" onClick={() => setView('recipes')}>
+                                    <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase"><i className="ph ph-book-bookmark"></i> {t.recipes}</div>
+                                    <div><span className="text-2xl font-bold">{recipes.length}</span></div>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* CALENDAR (MEALS & EVENTS) */}
+                    {view === 'calendar' && (
+                        <div className="space-y-4 slide-up">
+                            {/* Toggle */}
+                            <div className="bg-white p-1 rounded-2xl flex shadow-sm border border-slate-100">
+                                <button onClick={() => setCalendarMode('meals')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${calendarMode==='meals' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500'}`}>{t.meals}</button>
+                                <button onClick={() => setCalendarMode('events')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${calendarMode==='events' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'}`}>{t.events}</button>
+                            </div>
+
+                            {/* MEALS VIEW */}
+                            {calendarMode === 'meals' && (
+                                <div className="space-y-4">
+                                    {currentUser.role !== 'admin' && (
+                                        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-xl text-xs text-center border border-yellow-200">
+                                            <i className="ph ph-lock-key mr-1"></i> {DICTIONARY[lang].readOnly}
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm">
+                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-left text-lg"></i></button>
+                                        <span className="text-sm font-bold text-slate-700">{currentWeekStart.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - {addDays(currentWeekStart, 6).toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}</span>
+                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-right text-lg"></i></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {Array(7).fill(0).map((_, i) => {
+                                            const date = addDays(currentWeekStart, i);
+                                            const dateKey = formatDateKey(date);
+                                            const isToday = formatDateKey(new Date()) === dateKey;
+                                            const val = mealData[dateKey]?.name || "";
+                                            return (
+                                                <div key={dateKey} className={`p-4 rounded-2xl transition-all ${isToday ? 'bg-white shadow-md ring-2 ring-blue-500/10' : 'bg-white/60 border border-slate-100'}`}>
+                                                    <div className="flex justify-between mb-2">
+                                                        <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-slate-300 ml-1">{date.getDate()}</span></span>
+                                                        {currentUser.role === 'admin' && (
+                                                            <div className="relative group"><i className="ph ph-calendar-plus text-slate-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => { 
+                                                                const next = { ...mealData };
+                                                                next[e.target.value] = { name: next[dateKey]?.name || "" };
+                                                                next[dateKey] = { name: "" };
+                                                                setMealData(next); saveData(next, groceries, tasks, recipes, events);
+                                                            }} /></div>
+                                                        )}
+                                                    </div>
+                                                    <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => {
+                                                        const next = { ...mealData, [dateKey]: { name: e.target.value } };
+                                                        setMealData(next); saveData(next, groceries, tasks, recipes, events);
+                                                    }} className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200 disabled:opacity-70" placeholder={currentUser.role === 'admin' ? "..." : ""} />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* EVENTS VIEW */}
+                            {calendarMode === 'events' && (
+                                <div className="space-y-6">
+                                    <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
+                                        <h3 className="text-xs font-bold text-indigo-500 uppercase tracking-wide mb-3">{t.newEvent}</h3>
+                                        <div className="flex flex-col gap-3">
+                                            <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder={t.eventName} className="bg-slate-50 p-3 rounded-xl text-sm font-bold" />
+                                            <div className="flex gap-2">
+                                                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="bg-slate-50 p-3 rounded-xl text-xs font-bold" />
+                                                <select value={eventType} onChange={(e) => setEventType(e.target.value)} className="flex-1 bg-slate-50 p-3 rounded-xl text-xs font-bold">
+                                                    {EVENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+                                                </select>
+                                                <button onClick={addEvent} className="bg-indigo-600 text-white px-4 rounded-xl shadow-lg shadow-indigo-200"><i className="ph ph-plus font-bold"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {upcomingEvents.length === 0 && <p className="text-center text-slate-300 italic py-10">No upcoming events.</p>}
+                                        {upcomingEvents.map(ev => (
+                                            <div key={ev.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="bg-indigo-50 text-indigo-600 w-12 h-12 rounded-xl flex flex-col items-center justify-center font-bold leading-none">
+                                                        <span className="text-xs uppercase">{new Date(ev.date).toLocaleDateString('en-US', {month:'short'})}</span>
+                                                        <span className="text-lg">{new Date(ev.date).getDate()}</span>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-800">{ev.title}</h4>
+                                                        <p className="text-xs text-slate-400">{ev.type} • {getFriendlyDate(ev.date, lang)}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => deleteEvent(ev.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -350,7 +533,6 @@
                             
                             {/* CREATOR PANEL */}
                             <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
-                                {/* Type Selector */}
                                 <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar">
                                     <button onClick={() => setTaskType('house')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='house' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🏠 {t.types.house}</button>
                                     <button onClick={() => setTaskType('koda')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='koda' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🐺 {t.types.koda}</button>
@@ -358,16 +540,22 @@
                                     <button onClick={() => setTaskType('both')} className={`px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${taskType==='both' ? 'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>🐺🐱 {t.types.both}</button>
                                 </div>
                                 
-                                {/* Assignee & Date */}
-                                <div className="flex gap-2 mb-3">
-                                    <select value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700">
-                                        {USERS.map(u => <option key={u.name} value={u.name}>{t.assign}: {u.name}</option>)}
-                                    </select>
-                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-32 bg-slate-50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700" />
+                                <div className="mb-3">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">{t.assign}</p>
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                        {USERS.map(u => {
+                                            const isSelected = taskAssignees.includes(u.name);
+                                            return (
+                                                <button key={u.name} onClick={() => toggleAssignee(u.name)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-bold transition ${isSelected ? u.color + ' ring-2 ring-offset-2 ring-slate-200' : 'bg-slate-50 text-slate-300 border-slate-100'}`}>
+                                                    {u.name.substring(0,2)}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
 
-                                {/* Text & Add */}
                                 <div className="flex gap-2">
+                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-10 bg-slate-50 rounded-xl px-2 py-3 text-xs font-bold text-transparent bg-[url('https://unpkg.com/@phosphor-icons/web/assets/calendar.svg')] bg-no-repeat bg-center" />
                                     <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium" />
                                     <button onClick={addTask} className="bg-blue-600 text-white w-12 rounded-xl flex items-center justify-center shadow-lg active:scale-95"><i className="ph ph-plus text-xl font-bold"></i></button>
                                 </div>
@@ -389,9 +577,10 @@
                                             
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="text-sm">{getTypeIcon(task.type)}</span>
-                                                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wide">
-                                                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{task.assignee}</span>
-                                                    <span className="text-slate-300">from {task.author}</span>
+                                                <div className="flex items-center gap-1">
+                                                    {task.assignees && task.assignees.map(u => (
+                                                        <span key={u} className="text-[10px] uppercase font-bold tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{u}</span>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -399,55 +588,64 @@
                                         <button onClick={() => deleteTask(task.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
                                     </div>
                                 ))}
-                                {tasks.length === 0 && <p className="text-center text-slate-300 italic text-sm mt-10">No tasks created yet.</p>}
                             </div>
                         </div>
                     )}
 
-                    {/* CALENDAR & GROCERIES (Standard Views) */}
-                    {view === 'calendar' && (
-                         <div className="space-y-4 slide-up">
-                            {currentUser.role !== 'admin' && (
-                                <div className="bg-yellow-50 text-yellow-800 p-3 rounded-xl text-xs text-center border border-yellow-200">
-                                    <i className="ph ph-lock-key mr-1"></i> {DICTIONARY[lang].readOnly}
+                    {/* RECIPES */}
+                    {view === 'recipes' && (
+                        <div className="space-y-6 slide-up">
+                            {!showRecipeForm && (
+                                <button onClick={() => setShowRecipeForm(true)} className="w-full bg-rose-500 text-white p-4 rounded-2xl font-bold shadow-lg shadow-rose-200 flex items-center justify-center gap-2">
+                                    <i className="ph ph-plus text-xl"></i> {t.addRecipe}
+                                </button>
+                            )}
+                            {showRecipeForm && (
+                                <div className="bg-white p-5 rounded-3xl shadow-lg border border-rose-100 space-y-3">
+                                    <input type="text" value={rName} onChange={(e) => setRName(e.target.value)} placeholder={t.recipeName} className="w-full bg-slate-50 p-3 rounded-xl font-bold" />
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                                        {RECIPE_CATS.map(c => <button key={c} onClick={() => setRCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${rCat === c ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{c}</button>)}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input type="text" value={rLink} onChange={(e) => setRLink(e.target.value)} placeholder={t.recipeLink} className="flex-1 bg-slate-50 p-3 rounded-xl text-sm" />
+                                        <button onClick={openAIHelp} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 rounded-xl shadow-md text-xs font-bold flex flex-col items-center justify-center">
+                                            <i className="ph ph-sparkle text-lg"></i>
+                                            <span>Gemini</span>
+                                        </button>
+                                    </div>
+                                    <textarea value={rNotes} onChange={(e) => setRNotes(e.target.value)} placeholder={t.recipeNotes} className="w-full bg-slate-50 p-3 rounded-xl text-sm h-24"></textarea>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setShowRecipeForm(false)} className="flex-1 bg-slate-100 text-slate-500 p-3 rounded-xl font-bold">Cancel</button>
+                                        <button onClick={addRecipe} className="flex-1 bg-rose-500 text-white p-3 rounded-xl font-bold">Save</button>
+                                    </div>
                                 </div>
                             )}
-                            <div className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm">
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-left text-lg"></i></button>
-                                <span className="text-sm font-bold text-slate-700">{currentWeekStart.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - {addDays(currentWeekStart, 6).toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}</span>
-                                <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-10 h-10 flex items-center justify-center text-slate-400"><i className="ph ph-caret-right text-lg"></i></button>
-                            </div>
                             <div className="space-y-3">
-                                {Array(7).fill(0).map((_, i) => {
-                                    const date = addDays(currentWeekStart, i);
-                                    const dateKey = formatDateKey(date);
-                                    const isToday = formatDateKey(new Date()) === dateKey;
-                                    const val = mealData[dateKey]?.name || "";
-                                    return (
-                                        <div key={dateKey} className={`p-4 rounded-2xl transition-all ${isToday ? 'bg-white shadow-md ring-2 ring-blue-500/10' : 'bg-white/60 border border-slate-100'}`}>
-                                            <div className="flex justify-between mb-2">
-                                                <span className={`text-xs font-bold uppercase tracking-wider ${isToday ? 'text-blue-600' : 'text-slate-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-slate-300 ml-1">{date.getDate()}</span></span>
-                                                {currentUser.role === 'admin' && (
-                                                    <div className="relative group"><i className="ph ph-calendar-plus text-slate-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0" onChange={(e) => { 
-                                                        const next = { ...mealData };
-                                                        next[e.target.value] = { name: next[dateKey]?.name || "" };
-                                                        next[dateKey] = { name: "" };
-                                                        setMealData(next); saveData(next, groceries, tasks);
-                                                    }} /></div>
-                                                )}
+                                {recipes.length === 0 && <p className="text-center text-slate-300 italic py-10">No recipes yet.</p>}
+                                {recipes.map(r => (
+                                    <div key={r.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative group">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-slate-800">{r.name}</h3>
+                                                <span className="text-xs bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full font-bold">{r.category}</span>
                                             </div>
-                                            <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => {
-                                                const next = { ...mealData, [dateKey]: { name: e.target.value } };
-                                                setMealData(next); saveData(next, groceries, tasks);
-                                            }} className="w-full bg-transparent font-medium text-lg text-slate-800 placeholder-slate-200 disabled:opacity-70" placeholder={currentUser.role === 'admin' ? "..." : ""} />
+                                            <button onClick={() => deleteRecipe(r.id)} className="text-slate-200 hover:text-red-400"><i className="ph ph-trash"></i></button>
                                         </div>
-                                    );
-                                })}
+                                        {r.notes && <p className="text-sm text-slate-600 mb-3 bg-slate-50 p-3 rounded-xl whitespace-pre-wrap">{r.notes}</p>}
+                                        {r.link && (
+                                            <a href={r.link} target="_blank" className="inline-flex items-center gap-2 text-blue-500 text-sm font-bold bg-blue-50 px-3 py-2 rounded-xl hover:bg-blue-100 transition">
+                                                <i className="ph ph-link"></i> {t.viewLink}
+                                            </a>
+                                        )}
+                                        <div className="absolute bottom-5 right-5 text-[10px] text-slate-300">Added by {r.author}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                     {view === 'groceries' && (
+                    {/* GROCERIES */}
+                    {view === 'groceries' && (
                         <div className="space-y-6 slide-up">
                             <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-2 z-30">
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
@@ -487,7 +685,8 @@
                 {/* BOTTOM NAV */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between z-50 text-xs font-medium text-gray-400">
                     <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-2 ${view === 'home' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'home' ? 'ph-house-fill' : 'ph-house'} text-2xl`}></i>{t.home}</button>
-                    <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-2 ${view === 'calendar' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'calendar' ? 'ph-bowl-food-fill' : 'ph-bowl-food'} text-2xl`}></i>{t.plan}</button>
+                    <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-2 ${view === 'calendar' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'calendar' ? 'ph-calendar-fill' : 'ph-calendar'} text-2xl`}></i>{t.calendar}</button>
+                    <button onClick={() => setView('recipes')} className={`flex flex-col items-center gap-1 p-2 ${view === 'recipes' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'recipes' ? 'ph-book-bookmark-fill' : 'ph-book-bookmark'} text-2xl`}></i>{t.recipes}</button>
                     <button onClick={() => setView('tasks')} className={`flex flex-col items-center gap-1 p-2 ${view === 'tasks' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'tasks' ? 'ph-check-circle-fill' : 'ph-check-circle'} text-2xl`}></i>{t.tasks}</button>
                     <button onClick={() => setView('groceries')} className={`flex flex-col items-center gap-1 p-2 ${view === 'groceries' ? 'text-slate-900' : ''}`}><i className={`ph ${view === 'groceries' ? 'ph-basket-fill' : 'ph-basket'} text-2xl`}></i>{t.shop}</button>
                 </div>
