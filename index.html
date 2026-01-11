@@ -2,35 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Samla">
+    <meta name="theme-color" content="#FFFBF7">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
+    <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg">
+    
     <title>Samla - Family OS</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        cream: '#FFFBF7',
-                        'cute-pink': '#FF8FAB',
-                        'cute-blue': '#8BE0FF',
-                        'cute-yellow': '#FFD700',
-                    },
-                    borderRadius: {
-                        '4xl': '32px',
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script type="module">
@@ -42,31 +28,34 @@
     <style>
         body { 
             font-family: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: #FFFBF7; /* Creamy background */
+            background-color: #FFFBF7; 
             color: #4a4a4a;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: env(safe-area-inset-top);
         }
         .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(255, 143, 171, 0.3); } /* Cute pink focus ring */
+        input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(255, 143, 171, 0.3); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         button { touch-action: manipulation; font-weight: 700; }
         
-        /* Cute Cards */
-        .card {
-            background: white;
-            border-radius: 28px;
-            box-shadow: 0 8px 20px rgba(255, 143, 171, 0.15); /* Soft pink shadow */
-            border: 2px solid white;
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
         .nav-bar {
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(10px);
-            border-top: 2px solid #FFF0F5;
-            box-shadow: 0 -4px 20px rgba(255, 143, 171, 0.1);
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: env(safe-area-inset-bottom);
         }
     </style>
 </head>
@@ -77,7 +66,7 @@
 <script type="text/babel">
 
     // ==========================================
-    // ☁️ FIREBASE CONFIG
+    // ☁️ CONFIGURATION
     // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyD98vj78VL5Vm9xvqvSz3zGBWj34D8vuMo",
@@ -90,12 +79,19 @@
         databaseURL: "https://josefsen-skeie-app-default-rtdb.europe-west1.firebasedatabase.app"
     };
 
+    const LOGO_URL = "https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg";
+    
+    // --- ICONS (Embedded SVG to ensure they always load) ---
+    const Icons = {
+        House: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M213.38,105.74,138.83,38.27a19.78,19.78,0,0,0-21.66,0L42.62,105.74A19.9,19.9,0,0,0,36,120.6V208a20,20,0,0,0,20,20H96a4,4,0,0,0,4-4V152h56v72a4,4,0,0,0,4,4h40a20,20,0,0,0,20-20V120.6A19.9,19.9,0,0,0,213.38,105.74Z"/></svg>,
+        Calendar: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM48,208V96H208V208Z"/></svg>,
+        Book: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M216,40H88a40,40,0,0,0-40,40V200a16,16,0,0,0,16,16h0a16,16,0,0,0,16-16V56a24,24,0,0,1,24-24H208V200a16,16,0,0,0,16,16h0a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/></svg>,
+        Check: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>,
+        Basket: (props) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" {...props}><path d="M222.14,58.87A8,8,0,0,0,216,56H54.68L49.79,29.14A8,8,0,0,0,41.91,24H24a8,8,0,0,0,0,16h11L56.1,155.8a24,24,0,0,0,23.82,19.66h97a23.76,23.76,0,0,0,23.57-19l19.9-86.25A8,8,0,0,0,222.14,58.87ZM92,200a12,12,0,1,1-12,12A12,12,0,0,1,92,200Zm84,0a12,12,0,1,1-12,12A12,12,0,0,1,176,200Z"/></svg>
+    };
+
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // --- ASSETS ---
-    const LOGO_URL = "https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg";
-
-    // --- USERS & PERMISSIONS (Cuter Colors) ---
     const USERS = [
         { name: "Maria",   role: "admin", color: "bg-pink-100 text-pink-600 border-pink-200" },
         { name: "Mokka",   role: "admin", color: "bg-purple-100 text-purple-600 border-purple-200" },
@@ -104,7 +100,7 @@
         { name: "Øystein", role: "user",  color: "bg-yellow-100 text-yellow-700 border-yellow-200" }
     ];
 
-    const STORES = ["Rema 1000 Nordre Åsen", "Kiwi Bjerke", "Joker Disen", "Meny Grefsen", "Europris", "Gigaboks", "Annet"];
+    const STORES = ["Rema 1000", "Kiwi", "Joker", "Meny", "Europris", "Gigaboks", "Annet"];
     const RECIPE_CATS = ["Dinner", "Baking", "Dessert", "Breakfast", "Snack"];
     const EVENT_TYPES = ["Birthday", "Travel", "Appointment", "Other"];
 
@@ -123,7 +119,8 @@
             askAI: "Summarize", viewLink: "Original",
             aiPrompt: "Please analyze this recipe URL, give me a shopping list and a short summary of steps: ",
             newEvent: "New Event", eventName: "Event Name", eventDate: "Date", eventType: "Type",
-            deleteErr: "Oops! Only the author or Maria can delete this."
+            deleteErr: "Oops! Only the author or Maria can delete this.",
+            weather: "Weather", whiteBoard: "Family Board", writeNote: "Write a note..."
         },
         no: {
             home: "Hjem", calendar: "Kalender", shop: "Handle", tasks: "Oppgaver", recipes: "Kokebok",
@@ -139,84 +136,44 @@
             askAI: "Oppsummer", viewLink: "Original",
             aiPrompt: "Vennligst analyser denne oppskriften, gi meg en handleliste og en kort oppsummering av fremgangsmåte: ",
             newEvent: "Ny Hendelse", eventName: "Navn", eventDate: "Dato", eventType: "Type",
-            deleteErr: "Oops! Kun forfatter eller Maria kan slette denne."
+            deleteErr: "Oops! Kun forfatter eller Maria kan slette denne.",
+            weather: "Været", whiteBoard: "Beskjedtavle", writeNote: "Skriv en beskjed..."
         }
     };
 
     // --- HELPERS ---
-    const getMonday = (d) => {
-        d = new Date(d);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    };
+    const getMonday = (d) => { d = new Date(d); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(d.setDate(diff)); };
     const formatDateKey = (date) => date.toISOString().split('T')[0];
-    const addDays = (date, days) => {
-        const result = new Date(date);
-        result.setDate(result.getDate() + days);
-        return result;
-    };
-    const getFriendlyDate = (dateStr, lang) => {
-        if(!dateStr) return "";
-        const today = formatDateKey(new Date());
-        if(dateStr === today) return lang === 'en' ? "Today" : "I dag";
-        const tomorrow = formatDateKey(addDays(new Date(), 1));
-        if(dateStr === tomorrow) return lang === 'en' ? "Tomorrow" : "I morgen";
-        return dateStr.substring(5).split('-').reverse().join('.');
-    }
-    const getEventDateParts = (dateStr, lang) => {
-        if(!dateStr) return { day: "", month: "" };
-        const parts = dateStr.split('-'); 
-        const day = parts[2];
-        const monthIndex = parseInt(parts[1], 10) - 1;
-        const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthsNo = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"];
-        return { day: day, month: lang === 'en' ? monthsEn[monthIndex] : monthsNo[monthIndex] };
-    };
+    const addDays = (date, days) => { const result = new Date(date); result.setDate(result.getDate() + days); return result; };
+    const getFriendlyDate = (dateStr, lang) => { if(!dateStr) return ""; const today = formatDateKey(new Date()); if(dateStr === today) return lang === 'en' ? "Today" : "I dag"; const tomorrow = formatDateKey(addDays(new Date(), 1)); if(dateStr === tomorrow) return lang === 'en' ? "Tomorrow" : "I morgen"; return dateStr.substring(5).split('-').reverse().join('.'); };
+    const getEventDateParts = (dateStr, lang) => { if(!dateStr) return { day: "", month: "" }; const parts = dateStr.split('-'); const day = parts[2]; const monthIndex = parseInt(parts[1], 10) - 1; const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; const monthsNo = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"]; return { day: day, month: lang === 'en' ? monthsEn[monthIndex] : monthsNo[monthIndex] }; };
     
-    // --- CONFETTI (More colorful!) ---
-    const throwConfetti = () => {
-        confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.6 },
-            colors: ['#FF8FAB', '#8BE0FF', '#FFD700', '#A7F3D0', '#FFFFFF'], 
-            disableForReducedMotion: true,
-            scalar: 1.2
-        });
-    };
+    // --- CONFETTI ---
+    const throwConfetti = () => { confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, colors: ['#FF8FAB', '#8BE0FF', '#FFD700', '#A7F3D0'], disableForReducedMotion: true, scalar: 1.2 }); };
 
-    // --- LOGIN SCREEN (Cuter) ---
+    // --- COMPONENTS ---
     const LoginScreen = ({ onLogin, t }) => (
         <div className="min-h-screen bg-gradient-to-b from-pink-50 to-blue-50 flex flex-col items-center justify-center p-6 fade-in text-center">
-            <img src={LOGO_URL} alt="Josefsen-Skeie Logo" className="w-40 h-40 rounded-full shadow-xl mb-6 border-4 border-white" />
+            <img src={LOGO_URL} alt="Josefsen-Skeie Logo" className="w-44 h-44 rounded-full shadow-2xl mb-8 border-4 border-white object-cover" />
             <h1 className="text-3xl font-black mb-2 text-gray-800">{t.welcome}</h1>
             <p className="text-gray-500 mb-8 font-bold">{t.login}</p>
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                 {USERS.map(user => (
-                    <button 
-                        key={user.name} 
-                        onClick={() => onLogin(user)}
-                        className={`p-5 rounded-3xl font-black text-lg transition transform active:scale-95 shadow-md border-2 border-white ${user.color.replace('text-', 'bg-').replace('border-', 'text-white hover:opacity-90 ')}`}
-                    >
-                        {user.name}
-                    </button>
+                    <button key={user.name} onClick={() => onLogin(user)} className={`p-5 rounded-3xl font-black text-lg transition transform active:scale-95 shadow-md border-2 border-white ${user.color.replace('text-', 'bg-').replace('border-', 'text-white hover:opacity-90 ')}`}>{user.name}</button>
                 ))}
             </div>
         </div>
     );
 
-    // --- MAIN APP ---
     const App = () => {
         const [db, setDb] = useState(null);
         const [currentUser, setCurrentUser] = useState(null);
-        
-        // State
         const [lang, setLang] = useState('no'); 
         const [view, setView] = useState('home');
         const [calendarMode, setCalendarMode] = useState('meals'); 
         const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         const [syncStatus, setSyncStatus] = useState('saved');
+        const [weather, setWeather] = useState(null);
 
         // Data
         const [mealData, setMealData] = useState({});
@@ -224,6 +181,7 @@
         const [tasks, setTasks] = useState([]);
         const [recipes, setRecipes] = useState([]);
         const [events, setEvents] = useState([]);
+        const [whiteboard, setWhiteboard] = useState("");
 
         // Inputs
         const [taskInput, setTaskInput] = useState("");
@@ -244,23 +202,25 @@
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
 
-        // --- FIREBASE ---
+        // --- FETCH WEATHER ---
+        useEffect(() => {
+            // Oslo Coordinates
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=59.91&longitude=10.75&current_weather=true')
+                .then(res => res.json())
+                .then(data => setWeather(data.current_weather))
+                .catch(err => console.error("Weather error", err));
+        }, []);
+
         useEffect(() => {
             const savedUser = localStorage.getItem('samla_user');
-            if (savedUser) {
-                const parsed = JSON.parse(savedUser);
-                setCurrentUser(parsed);
-                setTaskAssignees([parsed.name]); 
-            } else {
-                setTaskAssignees([USERS[0].name]);
-            }
+            if (savedUser) { const parsed = JSON.parse(savedUser); setCurrentUser(parsed); setTaskAssignees([parsed.name]); } 
+            else { setTaskAssignees([USERS[0].name]); }
 
             try {
                 const { initializeApp, getDatabase, ref, onValue } = window.firebaseModules;
                 const app = initializeApp(firebaseConfig);
                 const database = getDatabase(app);
                 setDb(database);
-
                 onValue(ref(database, 'family_data'), (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
@@ -269,139 +229,59 @@
                         if (data.tasks) setTasks(data.tasks);
                         if (data.recipes) setRecipes(data.recipes);
                         if (data.events) setEvents(data.events);
+                        if (data.whiteboard) setWhiteboard(data.whiteboard);
                     }
                 });
             } catch (e) { console.error(e); setSyncStatus('error'); }
         }, []);
 
-        const saveData = (newMeals, newGroceries, newTasks, newRecipes, newEvents) => {
+        const saveData = (updates) => {
             if (!db) return;
             setSyncStatus('saving');
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             timeoutRef.current = setTimeout(() => {
                 const { ref, set } = window.firebaseModules;
-                set(ref(db, 'family_data'), { meals: newMeals, groceries: newGroceries, tasks: newTasks, recipes: newRecipes, events: newEvents })
-                .then(() => setSyncStatus('saved'))
-                .catch(() => setSyncStatus('error'));
+                set(ref(db, 'family_data'), { meals: mealData, groceries, tasks, recipes, events, whiteboard, ...updates })
+                .then(() => setSyncStatus('saved')).catch(() => setSyncStatus('error'));
             }, 500);
         };
 
-        const handleLogin = (user) => {
-            setCurrentUser(user);
-            setTaskAssignees([user.name]);
-            localStorage.setItem('samla_user', JSON.stringify(user));
-        };
+        const handleLogin = (user) => { setCurrentUser(user); setTaskAssignees([user.name]); localStorage.setItem('samla_user', JSON.stringify(user)); };
+        const handleLogout = () => { setCurrentUser(null); localStorage.removeItem('samla_user'); setView('home'); };
 
-        const handleLogout = () => {
-            setCurrentUser(null);
-            localStorage.removeItem('samla_user');
-            setView('home');
-        };
+        // ACTIONS
+        const addTask = () => { if (!taskInput.trim() || taskAssignees.length === 0) return; const next = [...tasks, { id: Date.now(), text: taskInput, assignees: taskAssignees, author: currentUser.name, date: taskDate, type: taskType, completed: false }]; setTasks(next); setTaskInput(""); saveData({ tasks: next }); };
+        const toggleTask = (id) => { const task = tasks.find(t => t.id === id); if(!task.completed) throwConfetti(); const next = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t); setTasks(next); saveData({ tasks: next }); };
+        const deleteTask = (id) => { const task = tasks.find(t => t.id === id); if (task.author !== currentUser.name && currentUser.name !== "Maria") { alert(t.deleteErr); return; } const next = tasks.filter(t => t.id !== id); setTasks(next); saveData({ tasks: next }); };
+        const toggleAssignee = (name) => { if(taskAssignees.includes(name)) setTaskAssignees(taskAssignees.filter(n => n !== name)); else setTaskAssignees([...taskAssignees, name]); };
+        
+        const updateWhiteboard = (val) => { setWhiteboard(val); saveData({ whiteboard: val }); };
+        const updateMeal = (key, val) => { if(currentUser.role !== 'admin') return; const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
+        const addGrocery = () => { if (!groceryInput.trim()) return; const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }]; setGroceries(next); setGroceryInput(""); saveData({ groceries: next }); };
+        const toggleGrocery = (id) => { const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g); setGroceries(next); saveData({ groceries: next }); };
+        const deleteGrocery = (id) => { const next = groceries.filter(g => g.id !== id); setGroceries(next); saveData({ groceries: next }); };
+        const addRecipe = () => { if(!rName.trim()) return; const next = [...recipes, { id: Date.now(), name: rName, link: rLink, notes: rNotes, category: rCat, author: currentUser.name }]; setRecipes(next); setRName(""); setRLink(""); setRNotes(""); setShowRecipeForm(false); saveData({ recipes: next }); };
+        const deleteRecipe = (id) => { if(confirm("Delete?")) { const next = recipes.filter(r => r.id !== id); setRecipes(next); saveData({ recipes: next }); } };
+        const addEvent = () => { if(!eventName.trim()) return; const next = [...events, { id: Date.now(), title: eventName, date: eventDate, type: eventType, author: currentUser.name }]; setEvents(next); setEventName(""); saveData({ events: next }); };
+        const deleteEvent = (id) => { const next = events.filter(e => e.id !== id); setEvents(next); saveData({ events: next }); };
+        const openAIHelp = () => { if(!rLink) { alert("Paste a link first!"); return; } const prompt = `${t.aiPrompt} ${rLink}`; navigator.clipboard.writeText(prompt).then(() => { alert("Copied! Opening Gemini..."); window.open(`https://gemini.google.com/app`, '_blank'); }); };
 
-        // --- TASKS ---
-        const addTask = () => {
-            if (!taskInput.trim() || taskAssignees.length === 0) return;
-            const next = [...tasks, { 
-                id: Date.now(), text: taskInput, assignees: taskAssignees, author: currentUser.name, 
-                date: taskDate, type: taskType, completed: false 
-            }];
-            setTasks(next); setTaskInput(""); saveData(mealData, groceries, next, recipes, events);
-        };
-        const toggleTask = (id) => {
-            const task = tasks.find(t => t.id === id);
-            if(!task.completed) throwConfetti(); // Celebration!
-            const next = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-            setTasks(next); saveData(mealData, groceries, next, recipes, events);
-        };
-        const deleteTask = (id) => {
-            const task = tasks.find(t => t.id === id);
-            // Strict Permission Check
-            if (task.author !== currentUser.name && currentUser.name !== "Maria") {
-                alert(t.deleteErr);
-                return;
-            }
-            const next = tasks.filter(t => t.id !== id);
-            setTasks(next); saveData(mealData, groceries, next, recipes, events);
-        };
-        const toggleAssignee = (name) => {
-            if(taskAssignees.includes(name)) setTaskAssignees(taskAssignees.filter(n => n !== name));
-            else setTaskAssignees([...taskAssignees, name]);
-        };
-
-        // --- OTHERS ---
-        const updateMeal = (key, val) => {
-            if(currentUser.role !== 'admin') return;
-            const next = { ...mealData, [key]: { name: val } };
-            setMealData(next); saveData(next, groceries, tasks, recipes, events);
-        };
-        const addGrocery = () => {
-            if (!groceryInput.trim()) return;
-            const next = [...groceries, { id: Date.now(), text: groceryInput, store: selectedStore, checked: false }];
-            setGroceries(next); setGroceryInput(""); saveData(mealData, next, tasks, recipes, events);
-        };
-        const toggleGrocery = (id) => {
-            const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g);
-            setGroceries(next); saveData(mealData, next, tasks, recipes, events);
-        };
-        const deleteGrocery = (id) => {
-            const next = groceries.filter(g => g.id !== id);
-            setGroceries(next); saveData(mealData, next, tasks, recipes, events);
-        };
-        const addRecipe = () => {
-            if(!rName.trim()) return;
-            const next = [...recipes, { id: Date.now(), name: rName, link: rLink, notes: rNotes, category: rCat, author: currentUser.name }];
-            setRecipes(next); setRName(""); setRLink(""); setRNotes(""); setShowRecipeForm(false);
-            saveData(mealData, groceries, tasks, next, events);
-        };
-        const deleteRecipe = (id) => {
-            if(confirm("Delete recipe?")) {
-                const next = recipes.filter(r => r.id !== id);
-                setRecipes(next); saveData(mealData, groceries, tasks, next, events);
-            }
-        };
-        const addEvent = () => {
-            if(!eventName.trim()) return;
-            const next = [...events, { id: Date.now(), title: eventName, date: eventDate, type: eventType, author: currentUser.name }];
-            setEvents(next); setEventName("");
-            saveData(mealData, groceries, tasks, recipes, next);
-        };
-        const deleteEvent = (id) => {
-            const next = events.filter(e => e.id !== id);
-            setEvents(next); saveData(mealData, groceries, tasks, recipes, next);
-        };
-        const openAIHelp = () => {
-            if(!rLink) { alert("Paste a link first!"); return; }
-            const prompt = `${t.aiPrompt} ${rLink}`;
-            navigator.clipboard.writeText(prompt).then(() => {
-                alert("Copied! Opening Gemini...");
-                window.open(`https://gemini.google.com/app`, '_blank');
-            });
-        };
-
-        // --- COMPUTED ---
+        // COMPUTED
         const todayKey = formatDateKey(new Date());
         const todaysDinner = mealData[todayKey]?.name;
         const myTasks = tasks.filter(t => t.assignees && t.assignees.includes(currentUser?.name) && !t.completed).sort((a,b) => a.date > b.date ? 1 : -1);
         const upcomingEvents = events.filter(e => e.date >= todayKey).sort((a,b) => a.date > b.date ? 1 : -1);
         const nextEvent = upcomingEvents[0];
-        const groceriesByStore = useMemo(() => {
-            const g = {}; STORES.forEach(s => g[s] = []);
-            groceries.forEach(i => { if(g[i.store]) g[i.store].push(i); else { if(!g["Annet"]) g["Annet"]=[]; g["Annet"].push(i); } });
-            return g;
-        }, [groceries]);
-        const getTypeIcon = (type) => {
-            if(type === 'koda') return '🐺'; if(type === 'cooper') return '🐱'; if(type === 'both') return '🐺🐱'; return '🏠';
-        }
+        const groceriesByStore = useMemo(() => { const g = {}; STORES.forEach(s => g[s] = []); groceries.forEach(i => { if(g[i.store]) g[i.store].push(i); else { if(!g["Annet"]) g["Annet"]=[]; g["Annet"].push(i); } }); return g; }, [groceries]);
+        const getTypeIcon = (type) => { if(type === 'koda') return '🐺'; if(type === 'cooper') return '🐱'; if(type === 'both') return '🐺🐱'; return '🏠'; }
 
         if (!currentUser) return <LoginScreen onLogin={handleLogin} t={t} />;
 
         return (
             <div className="min-h-screen pb-32">
-                
-                {/* HEADER - Cute & Bubbly */}
-                <header className="fixed top-0 w-full z-40 px-6 py-4 flex justify-between items-center transition-all bg-white/80 backdrop-blur-md shadow-sm border-b-2 border-pink-50 rounded-b-4xl">
+                <header className="fixed top-0 w-full z-40 px-6 pt-12 pb-4 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-pink-50 rounded-b-[2rem] shadow-sm">
                     <div className="flex items-center gap-3">
-                        <img src={LOGO_URL} alt="Logo" className="w-10 h-10 rounded-full shadow-sm border-2 border-white" />
+                        <img src={LOGO_URL} alt="Logo" className="w-10 h-10 rounded-full shadow-sm border-2 border-white object-cover" />
                         <h1 className="text-2xl font-black tracking-tight text-gray-800">Samla.</h1>
                     </div>
                     <div className="flex items-center gap-4">
@@ -411,14 +291,32 @@
                         </div>
                     </div>
                 </header>
-                <div className="h-24"></div> {/* Spacer */}
+                <div className="h-28"></div>
 
                 <main className="p-5 max-w-lg mx-auto">
-
-                    {/* DASHBOARD */}
                     {view === 'home' && (
                         <div className="space-y-6 slide-up">
-                            {/* Upcoming Event */}
+                            {/* Weather & Date */}
+                            <div className="flex justify-between items-end px-2">
+                                <div>
+                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{new Date().toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday: 'long', day:'numeric', month:'long'})}</p>
+                                    <h2 className="text-2xl font-black text-gray-800">{t.welcome}, {currentUser.name}!</h2>
+                                </div>
+                                {weather && (
+                                    <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                                        <span className="text-2xl">{weather.temperature > 10 ? '☀️' : '🌥️'}</span>
+                                        <span className="font-bold text-gray-600">{weather.temperature}°</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Whiteboard */}
+                            <div className="card p-4 bg-yellow-50 border-yellow-100 shadow-yellow-100/50">
+                                <h3 className="text-xs font-black text-yellow-600 uppercase mb-2 ml-1 tracking-widest">{t.whiteBoard}</h3>
+                                <textarea value={whiteboard} onChange={(e) => updateWhiteboard(e.target.value)} placeholder={t.writeNote} className="w-full bg-white/50 rounded-xl p-3 text-sm font-bold text-gray-700 h-20 resize-none placeholder-gray-400 border-none"></textarea>
+                            </div>
+
+                            {/* Next Event */}
                             {nextEvent && (
                                 <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-[32px] p-6 shadow-xl shadow-purple-200/50 flex items-center justify-between cursor-pointer border-4 border-white transform hover:scale-[1.02] transition" onClick={() => { setView('calendar'); setCalendarMode('events'); }}>
                                     <div>
@@ -426,9 +324,7 @@
                                         <h3 className="text-xl font-black">{nextEvent.title}</h3>
                                         <p className="text-sm font-bold opacity-90">{getFriendlyDate(nextEvent.date, lang)}</p>
                                     </div>
-                                    <div className="bg-white/25 w-14 h-14 rounded-full flex items-center justify-center">
-                                        <i className="ph ph-star-fill text-2xl"></i>
-                                    </div>
+                                    <div className="bg-white/25 w-14 h-14 rounded-full flex items-center justify-center text-3xl">⭐</div>
                                 </div>
                             )}
 
@@ -440,7 +336,7 @@
                                 </div>
                                 {myTasks.length === 0 ? (
                                     <div className="card p-8 text-center bg-teal-50/50 border-2 border-teal-100">
-                                        <i className="ph ph-confetti text-4xl mb-2 text-teal-400"></i>
+                                        <div className="text-4xl mb-2">🎉</div>
                                         <p className="font-bold text-teal-700">{t.noMyTasks}</p>
                                     </div>
                                 ) : (
@@ -463,37 +359,21 @@
                                     </div>
                                 )}
                             </div>
-
-                            {/* Quick Stats */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-blue-50 to-white border-2 border-blue-100" onClick={() => { setView('calendar'); setCalendarMode('meals'); }}>
-                                    <div className="flex items-center gap-2 text-blue-400 text-xs font-black uppercase"><i className="ph ph-bowl-food-fill"></i> {t.today}</div>
-                                    <p className="font-black text-2xl leading-tight text-gray-800">{todaysDinner || <span className="text-gray-300 font-bold">{t.nothingPlanned}</span>}</p>
-                                    <div className="text-xs font-black text-blue-500 bg-blue-100 self-start px-3 py-1 rounded-full">View Week &rarr;</div>
-                                </div>
-                                <div className="card p-6 h-40 flex flex-col justify-between cursor-pointer hover:shadow-xl transition bg-gradient-to-br from-pink-50 to-white border-2 border-pink-100" onClick={() => setView('recipes')}>
-                                    <div className="flex items-center gap-2 text-pink-400 text-xs font-black uppercase"><i className="ph ph-book-bookmark-fill"></i> {t.recipes}</div>
-                                    <div><span className="text-4xl font-black text-gray-800">{recipes.length}</span></div>
-                                    <div className="text-xs font-black text-pink-500 bg-pink-100 self-start px-3 py-1 rounded-full">Open &rarr;</div>
-                                </div>
-                            </div>
                         </div>
                     )}
-
-                    {/* CALENDAR */}
+                    
                     {view === 'calendar' && (
                         <div className="space-y-6 slide-up">
                             <div className="card p-1.5 flex bg-gray-100/50">
                                 <button onClick={() => setCalendarMode('meals')} className={`flex-1 py-3 rounded-3xl text-xs font-black transition ${calendarMode==='meals' ? 'bg-white text-gray-800 shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>{t.meals}</button>
                                 <button onClick={() => setCalendarMode('events')} className={`flex-1 py-3 rounded-3xl text-xs font-black transition ${calendarMode==='events' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>{t.events}</button>
                             </div>
-
                             {calendarMode === 'meals' && (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center px-4 bg-white p-3 rounded-full shadow-sm">
-                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full"><i className="ph ph-caret-left font-bold text-lg"></i></button>
+                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full font-bold">←</button>
                                         <span className="text-sm font-black text-gray-600">{currentWeekStart.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})} - {addDays(currentWeekStart, 6).toLocaleDateString(lang==='en'?'en-GB':'no-NO', {day:'numeric', month:'short'})}</span>
-                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full"><i className="ph ph-caret-right font-bold text-lg"></i></button>
+                                        <button onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-full font-bold">→</button>
                                     </div>
                                     <div className="space-y-3">
                                         {Array(7).fill(0).map((_, i) => {
@@ -505,23 +385,16 @@
                                                 <div key={dateKey} className={`p-5 rounded-[32px] transition-all ${isToday ? 'bg-white shadow-xl shadow-blue-100 border-2 border-blue-200' : 'bg-white border-2 border-gray-100'}`}>
                                                     <div className="flex justify-between mb-2">
                                                         <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-500' : 'text-gray-400'}`}>{date.toLocaleDateString(lang==='en'?'en-GB':'no-NO', {weekday:'long'})} <span className="text-gray-800 text-base ml-1">{date.getDate()}</span></span>
-                                                        {currentUser.role === 'admin' && (
-                                                            <div className="relative group"><i className="ph ph-calendar-plus text-gray-300"></i><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0 cursor-pointer" onChange={(e) => { 
-                                                                const next = { ...mealData }; next[e.target.value] = { name: next[dateKey]?.name || "" }; next[dateKey] = { name: "" }; setMealData(next); saveData(next, groceries, tasks, recipes, events);
-                                                            }} /></div>
-                                                        )}
+                                                        {currentUser.role === 'admin' && <div className="relative group text-gray-300"><Icons.Calendar className="w-5 h-5" /><input type="date" className="absolute top-0 right-0 w-6 h-6 opacity-0 cursor-pointer" onChange={(e) => { const next = { ...mealData }; next[e.target.value] = { name: next[dateKey]?.name || "" }; next[dateKey] = { name: "" }; setMealData(next); saveData({ meals: next }); }} /></div>}
                                                     </div>
-                                                    <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => {
-                                                        const next = { ...mealData, [dateKey]: { name: e.target.value } }; setMealData(next); saveData(next, groceries, tasks, recipes, events);
-                                                    }} className="w-full bg-transparent font-bold text-xl text-gray-800 placeholder-gray-200 disabled:opacity-70" placeholder={currentUser.role === 'admin' ? "..." : ""} />
+                                                    <input type="text" value={val} disabled={currentUser.role !== 'admin'} onChange={(e) => { const next = { ...mealData, [dateKey]: { name: e.target.value } }; setMealData(next); saveData({ meals: next }); }} className="w-full bg-transparent font-bold text-xl text-gray-800 placeholder-gray-200 disabled:opacity-70" placeholder="..." />
                                                 </div>
                                             );
                                         })}
                                     </div>
                                 </div>
                             )}
-
-                            {calendarMode === 'events' && (
+                             {calendarMode === 'events' && (
                                 <div className="space-y-6">
                                     <div className="card p-5 bg-indigo-50/50 border-indigo-100">
                                         <div className="flex flex-col gap-3">
@@ -531,12 +404,11 @@
                                                 <select value={eventType} onChange={(e) => setEventType(e.target.value)} className="flex-1 bg-white p-4 rounded-2xl text-xs font-bold shadow-sm">
                                                     {EVENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                                                 </select>
-                                                <button onClick={addEvent} className="bg-indigo-500 text-white px-5 rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition"><i className="ph ph-plus font-bold text-lg"></i></button>
+                                                <button onClick={addEvent} className="bg-indigo-500 text-white px-5 rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition font-bold text-xl">+</button>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        {upcomingEvents.length === 0 && <p className="text-center text-gray-300 italic py-10 font-medium">No upcoming events.</p>}
                                         {upcomingEvents.map(ev => {
                                             const dateParts = getEventDateParts(ev.date, lang);
                                             return (
@@ -551,7 +423,7 @@
                                                             <p className="text-xs font-bold text-gray-400">{ev.type} • {getFriendlyDate(ev.date, lang)}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => deleteEvent(ev.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition"><i className="ph ph-trash-fill"></i></button>
+                                                    <button onClick={() => deleteEvent(ev.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                                 </div>
                                             );
                                         })}
@@ -561,40 +433,29 @@
                         </div>
                     )}
 
-                    {/* TASKS VIEW */}
                     {view === 'tasks' && (
                         <div className="space-y-6 slide-up">
-                            <div className="card p-5 sticky top-24 z-30 shadow-xl shadow-pink-100/50 bg-pink-50/30 border-pink-100">
+                             <div className="card p-5 sticky top-24 z-30 shadow-xl shadow-pink-100/50 bg-pink-50/30 border-pink-100">
                                 <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
                                     <button onClick={() => setTaskType('house')} className={`px-4 py-2 rounded-full text-xs font-black transition whitespace-nowrap ${taskType==='house' ? 'bg-gray-800 text-white shadow-md transform scale-105':'bg-white text-gray-400 shadow-sm'}`}>🏠 {t.types.house}</button>
                                     <button onClick={() => setTaskType('koda')} className={`px-4 py-2 rounded-full text-xs font-black transition whitespace-nowrap ${taskType==='koda' ? 'bg-gray-800 text-white shadow-md transform scale-105':'bg-white text-gray-400 shadow-sm'}`}>🐺 {t.types.koda}</button>
                                     <button onClick={() => setTaskType('cooper')} className={`px-4 py-2 rounded-full text-xs font-black transition whitespace-nowrap ${taskType==='cooper' ? 'bg-gray-800 text-white shadow-md transform scale-105':'bg-white text-gray-400 shadow-sm'}`}>🐱 {t.types.cooper}</button>
-                                    <button onClick={() => setTaskType('both')} className={`px-4 py-2 rounded-full text-xs font-black transition whitespace-nowrap ${taskType==='both' ? 'bg-gray-800 text-white shadow-md transform scale-105':'bg-white text-gray-400 shadow-sm'}`}>🐺🐱 {t.types.both}</button>
                                 </div>
-                                <div className="mb-4">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2 ml-2 tracking-widest">{t.assign}</p>
-                                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pl-1">
-                                        {USERS.map(u => {
-                                            const isSelected = taskAssignees.includes(u.name);
-                                            return (
-                                                <button key={u.name} onClick={() => toggleAssignee(u.name)} className={`w-11 h-11 rounded-full border-4 flex items-center justify-center text-xs font-black transition shadow-sm ${isSelected ? u.color + ' ring-2 ring-offset-2 ring-pink-200 scale-110' : 'bg-white text-gray-300 border-white'}`}>{u.name.substring(0,2)}</button>
-                                            )
-                                        })}
-                                    </div>
+                                <div className="mb-4 flex gap-3 overflow-x-auto no-scrollbar pb-2 pl-1">
+                                    {USERS.map(u => {
+                                        const isSelected = taskAssignees.includes(u.name);
+                                        return ( <button key={u.name} onClick={() => toggleAssignee(u.name)} className={`w-11 h-11 rounded-full border-4 flex items-center justify-center text-xs font-black transition shadow-sm ${isSelected ? u.color + ' ring-2 ring-offset-2 ring-pink-200 scale-110' : 'bg-white text-gray-300 border-white'}`}>{u.name.substring(0,2)}</button> )
+                                    })}
                                 </div>
                                 <div className="flex gap-2">
-                                    <input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} className="w-11 bg-white rounded-2xl px-2 py-3 text-xs font-bold text-transparent bg-[url('https://unpkg.com/@phosphor-icons/web/assets/calendar-fill.svg')] bg-no-repeat bg-center shadow-sm" />
                                     <input type="text" value={taskInput} onChange={(e) => setTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTask()} placeholder={t.taskInput} className="flex-1 bg-white rounded-2xl px-5 py-3 text-sm font-bold placeholder-gray-300 shadow-sm" />
-                                    <button onClick={addTask} className="bg-pink-500 text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-200 active:scale-95 transition"><i className="ph ph-plus font-bold text-xl"></i></button>
+                                    <button onClick={addTask} className="bg-pink-500 text-white w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-200 active:scale-95 transition text-xl font-bold">+</button>
                                 </div>
                             </div>
-
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                                 {tasks.sort((a,b) => a.date > b.date ? 1 : -1).map(task => (
                                     <div key={task.id} className={`flex items-start gap-3 card p-4 border-l-8 ${task.completed ? 'border-l-gray-200 opacity-40 shadow-none' : (task.type === 'house' ? 'border-l-gray-600' : 'border-l-orange-400')}`}>
-                                        <button onClick={() => toggleTask(task.id)} className={`mt-1 w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition bg-white ${task.completed ? 'bg-gray-200 border-gray-200' : 'border-gray-200 hover:border-teal-400 hover:bg-teal-50'}`}>
-                                            {task.completed && <i className="ph ph-check-fat-fill text-gray-500 text-xs"></i>}
-                                        </button>
+                                        <button onClick={() => toggleTask(task.id)} className={`mt-1 w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition bg-white ${task.completed ? 'bg-gray-200 border-gray-200' : 'border-gray-200 hover:border-teal-400 hover:bg-teal-50'}`}>{task.completed && <Icons.Check className="w-3 h-3 text-gray-500" />}</button>
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
                                                 <p className={`text-base font-black ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.text}</p>
@@ -602,30 +463,18 @@
                                             </div>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span className="text-lg">{getTypeIcon(task.type)}</span>
-                                                <div className="flex items-center gap-1">
-                                                    {task.assignees && task.assignees.map(u => (
-                                                        <span key={u} className="text-[10px] uppercase font-black tracking-wide bg-gray-100 text-gray-500 px-2 py-1 rounded-full">{u}</span>
-                                                    ))}
-                                                    <span className="text-[10px] font-bold text-gray-300 ml-1">by {task.author}</span>
-                                                </div>
+                                                <div className="flex items-center gap-1">{task.assignees && task.assignees.map(u => (<span key={u} className="text-[10px] uppercase font-black tracking-wide bg-gray-100 text-gray-500 px-2 py-1 rounded-full">{u}</span>))}</div>
                                             </div>
                                         </div>
-                                        <button onClick={() => deleteTask(task.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition"><i className="ph ph-trash-fill"></i></button>
+                                        <button onClick={() => deleteTask(task.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                     </div>
                                 ))}
-                                {tasks.length === 0 && <p className="text-center text-gray-300 italic text-sm mt-10 font-medium">All done! Time to relax.</p>}
                             </div>
                         </div>
                     )}
-
-                    {/* RECIPES */}
                     {view === 'recipes' && (
-                        <div className="space-y-6 slide-up">
-                            {!showRecipeForm && (
-                                <button onClick={() => setShowRecipeForm(true)} className="w-full bg-pink-500 text-white p-5 rounded-[32px] font-black shadow-lg shadow-pink-200 flex items-center justify-center gap-2 border-4 border-white active:scale-95 transition">
-                                    <i className="ph ph-plus text-2xl"></i> {t.addRecipe}
-                                </button>
-                            )}
+                         <div className="space-y-6 slide-up">
+                            {!showRecipeForm && (<button onClick={() => setShowRecipeForm(true)} className="w-full bg-pink-500 text-white p-5 rounded-[32px] font-black shadow-lg shadow-pink-200 flex items-center justify-center gap-2 border-4 border-white active:scale-95 transition text-lg">+ {t.addRecipe}</button>)}
                             {showRecipeForm && (
                                 <div className="card p-5 space-y-3 bg-pink-50/30 border-pink-100">
                                     <input type="text" value={rName} onChange={(e) => setRName(e.target.value)} placeholder={t.recipeName} className="w-full bg-white p-4 rounded-2xl font-black shadow-sm" />
@@ -634,17 +483,16 @@
                                     </div>
                                     <div className="flex gap-2">
                                         <input type="text" value={rLink} onChange={(e) => setRLink(e.target.value)} placeholder={t.recipeLink} className="flex-1 bg-white p-4 rounded-2xl text-sm shadow-sm font-bold" />
-                                        <button onClick={openAIHelp} className="bg-gradient-to-r from-blue-400 to-purple-400 text-white px-4 rounded-2xl shadow-md text-xs font-black flex flex-col items-center justify-center active:scale-95 transition"><i className="ph ph-sparkle-fill text-xl mb-1"></i><span>Gemini</span></button>
+                                        <button onClick={openAIHelp} className="bg-gradient-to-r from-blue-400 to-purple-400 text-white px-4 rounded-2xl shadow-md text-xs font-black flex flex-col items-center justify-center active:scale-95 transition">Gemini</button>
                                     </div>
                                     <textarea value={rNotes} onChange={(e) => setRNotes(e.target.value)} placeholder={t.recipeNotes} className="w-full bg-white p-4 rounded-2xl text-sm h-28 shadow-sm font-medium"></textarea>
                                     <div className="flex gap-2">
                                         <button onClick={() => setShowRecipeForm(false)} className="flex-1 bg-gray-100 text-gray-400 p-4 rounded-2xl font-black">Cancel</button>
-                                        <button onClick={addRecipe} className="flex-1 bg-pink-500 text-white p-4 rounded-2xl font-black shadow-md shadow-pink-200">Save Recipe</button>
+                                        <button onClick={addRecipe} className="flex-1 bg-pink-500 text-white p-4 rounded-2xl font-black shadow-md shadow-pink-200">Save</button>
                                     </div>
                                 </div>
                             )}
                             <div className="space-y-4">
-                                {recipes.length === 0 && <p className="text-center text-gray-300 italic py-10 font-medium">No recipes yet. Add one!</p>}
                                 {recipes.map(r => (
                                     <div key={r.id} className="card p-5 relative group hover:shadow-md transition">
                                         <div className="flex justify-between items-start mb-3">
@@ -652,23 +500,17 @@
                                                 <h3 className="font-black text-xl text-gray-800 leading-tight">{r.name}</h3>
                                                 <span className="text-[10px] uppercase font-black text-pink-500 bg-pink-100 px-2 py-1 rounded-full">{r.category}</span>
                                             </div>
-                                            <button onClick={() => deleteRecipe(r.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition"><i className="ph ph-trash-fill"></i></button>
+                                            <button onClick={() => deleteRecipe(r.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                         </div>
                                         {r.notes && <p className="text-sm text-gray-600 mb-4 bg-gray-50/50 p-4 rounded-2xl whitespace-pre-wrap font-medium">{r.notes}</p>}
-                                        {r.link && (
-                                            <a href={r.link} target="_blank" className="inline-flex items-center gap-2 text-pink-500 text-xs font-black bg-pink-50 px-4 py-2 rounded-full hover:bg-pink-100 transition">
-                                                <i className="ph ph-link-bold"></i> {t.viewLink}
-                                            </a>
-                                        )}
-                                        <div className="absolute bottom-5 right-5 text-[10px] font-bold text-gray-300">Added by {r.author}</div>
+                                        {r.link && <a href={r.link} target="_blank" className="inline-flex items-center gap-2 text-pink-500 text-xs font-black bg-pink-50 px-4 py-2 rounded-full hover:bg-pink-100 transition">Open Link</a>}
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* GROCERIES */}
-                    {view === 'groceries' && (
+                     {view === 'groceries' && (
                         <div className="space-y-6 slide-up">
                             <div className="card p-4 sticky top-24 z-30 shadow-xl shadow-blue-100/50 bg-blue-50/30 border-blue-100">
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3">
@@ -676,7 +518,7 @@
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="text" value={groceryInput} onChange={(e) => setGroceryInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGrocery()} placeholder={t.addItem} className="flex-1 bg-white border-none rounded-2xl px-5 py-3 text-sm font-bold shadow-sm" />
-                                    <button onClick={addGrocery} className="bg-blue-500 text-white w-14 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-95 transition"><i className="ph ph-plus font-bold text-xl"></i></button>
+                                    <button onClick={addGrocery} className="bg-blue-500 text-white w-14 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-95 transition text-xl font-bold">+</button>
                                 </div>
                             </div>
                             {STORES.map(store => {
@@ -691,9 +533,9 @@
                                         <div className="divide-y divide-gray-50">
                                             {items.map(item => (
                                                 <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 group transition">
-                                                    <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition ${item.checked ? 'bg-gray-300 border-gray-300' : 'border-gray-200 bg-white hover:border-blue-400'}`}>{item.checked && <i className="ph ph-check-fat-fill text-white text-xs"></i>}</button>
+                                                    <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition ${item.checked ? 'bg-gray-300 border-gray-300' : 'border-gray-200 bg-white hover:border-blue-400'}`}>{item.checked && <Icons.Check className="w-3 h-3 text-white" />}</button>
                                                     <span className={`flex-1 text-sm font-bold ${item.checked ? 'text-gray-300 line-through' : 'text-gray-700'}`}>{item.text}</span>
-                                                    <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition"><i className="ph ph-trash-fill"></i></button>
+                                                    <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                                 </div>
                                             ))}
                                         </div>
@@ -702,16 +544,15 @@
                             })}
                         </div>
                     )}
-
                 </main>
                 
-                {/* BOTTOM NAV - Cute & Bubbly */}
-                <div className="nav-bar fixed bottom-0 left-0 right-0 pb-safe pt-2 px-4 flex justify-between z-50 text-[10px] font-black text-gray-400 uppercase tracking-widest rounded-t-4xl">
-                    <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl ${view === 'home' ? 'text-pink-500 bg-pink-50' : 'hover:bg-gray-50'}`}><i className={`ph ${view === 'home' ? 'ph-house-fill' : 'ph-house-bold'} text-2xl`}></i>{t.home}</button>
-                    <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl ${view === 'calendar' ? 'text-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}><i className={`ph ${view === 'calendar' ? 'ph-calendar-fill' : 'ph-calendar-bold'} text-2xl`}></i>{t.calendar}</button>
-                    <button onClick={() => setView('recipes')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl ${view === 'recipes' ? 'text-purple-500 bg-purple-50' : 'hover:bg-gray-50'}`}><i className={`ph ${view === 'recipes' ? 'ph-book-bookmark-fill' : 'ph-book-bookmark-bold'} text-2xl`}></i>{t.recipes}</button>
-                    <button onClick={() => setView('tasks')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl ${view === 'tasks' ? 'text-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}><i className={`ph ${view === 'tasks' ? 'ph-check-circle-fill' : 'ph-check-circle-bold'} text-2xl`}></i>{t.tasks}</button>
-                    <button onClick={() => setView('groceries')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl ${view === 'groceries' ? 'text-yellow-500 bg-yellow-50' : 'hover:bg-gray-50'}`}><i className={`ph ${view === 'groceries' ? 'ph-basket-fill' : 'ph-basket-bold'} text-2xl`}></i>{t.shop}</button>
+                {/* BOTTOM NAV */}
+                <div className="nav-bar fixed bottom-0 left-0 right-0 px-4 pt-2 pb-6 flex justify-between z-50 text-[10px] font-black text-gray-400 uppercase tracking-widest rounded-t-[2.5rem]">
+                    <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl w-16 ${view === 'home' ? 'text-pink-500 bg-pink-50' : ''}`}><Icons.House className={`w-6 h-6 ${view==='home'?'fill-current':'stroke-current stroke-2 fill-none'}`} />{t.home}</button>
+                    <button onClick={() => setView('calendar')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl w-16 ${view === 'calendar' ? 'text-blue-500 bg-blue-50' : ''}`}><Icons.Calendar className={`w-6 h-6 ${view==='calendar'?'fill-current':'stroke-current stroke-2 fill-none'}`} />{t.calendar}</button>
+                    <button onClick={() => setView('recipes')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl w-16 ${view === 'recipes' ? 'text-purple-500 bg-purple-50' : ''}`}><Icons.Book className={`w-6 h-6 ${view==='recipes'?'fill-current':'stroke-current stroke-2 fill-none'}`} />{t.recipes}</button>
+                    <button onClick={() => setView('tasks')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl w-16 ${view === 'tasks' ? 'text-teal-500 bg-teal-50' : ''}`}><Icons.Check className={`w-6 h-6 ${view==='tasks'?'fill-current':'stroke-current stroke-2 fill-none'}`} />{t.tasks}</button>
+                    <button onClick={() => setView('groceries')} className={`flex flex-col items-center gap-1 p-3 transition rounded-2xl w-16 ${view === 'groceries' ? 'text-yellow-500 bg-yellow-50' : ''}`}><Icons.Basket className={`w-6 h-6 ${view==='groceries'?'fill-current':'stroke-current stroke-2 fill-none'}`} />{t.shop}</button>
                 </div>
             </div>
         );
