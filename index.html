@@ -87,7 +87,6 @@
         { name: "Øystein", role: "user",  color: "bg-yellow-100 text-yellow-700 border-yellow-200" }
     ];
 
-    // UPDATED STORE LIST
     const STORES = ["Rema 1000", "KIWI", "Spar", "Mega", "Europris", "Holdbart", "Meny", "ODA", "OBS"];
     const RECIPE_CATS = ["Dinner", "Baking", "Dessert", "Breakfast", "Snack"];
     const EVENT_TYPES = ["Birthday", "Travel", "Appointment", "Other"];
@@ -183,7 +182,7 @@
         const [recipes, setRecipes] = useState([]);
         const [events, setEvents] = useState([]);
         const [messages, setMessages] = useState([]); 
-        const [schedules, setSchedules] = useState([]); // NEW
+        const [schedules, setSchedules] = useState([]);
 
         // Inputs
         const [taskInput, setTaskInput] = useState("");
@@ -193,7 +192,8 @@
         
         // Shopping Inputs
         const [groceryInput, setGroceryInput] = useState("");
-        const [groceryPrice, setGroceryPrice] = useState(""); // NEW
+        const [groceryPrice, setGroceryPrice] = useState(""); 
+        const [groceryQty, setGroceryQty] = useState(""); // NEW: Qty State
         const [selectedStore, setSelectedStore] = useState(STORES[0]);
         
         // Recipe Inputs
@@ -206,7 +206,7 @@
         // Event Inputs
         const [eventName, setEventName] = useState("");
         const [eventDate, setEventDate] = useState(formatDateKey(new Date()));
-        const [eventTime, setEventTime] = useState(""); // NEW
+        const [eventTime, setEventTime] = useState(""); 
         const [eventType, setEventType] = useState(EVENT_TYPES[0]);
         const [messageInput, setMessageInput] = useState("");
 
@@ -280,19 +280,21 @@
 
         const updateMeal = (key, val) => { const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
         
-        // SHOPPING ACTIONS - Updated
+        // SHOPPING ACTIONS - Updated with Quantity
         const addGrocery = () => { 
             if (!groceryInput.trim()) return; 
             const next = [...groceries, { 
                 id: Date.now(), 
                 text: groceryInput, 
-                price: groceryPrice || '0', // Save Price
+                price: groceryPrice || '0', 
+                qty: groceryQty || '1', // Save Quantity
                 store: selectedStore, 
                 checked: false 
             }]; 
             setGroceries(next); 
             setGroceryInput(""); 
             setGroceryPrice("");
+            setGroceryQty(""); // Reset Qty
             saveData({ groceries: next }); 
         };
         const toggleGrocery = (id) => { const next = groceries.map(g => g.id === id ? { ...g, checked: !g.checked } : g); setGroceries(next); saveData({ groceries: next }); };
@@ -301,14 +303,13 @@
         const addRecipe = () => { if(!rName.trim()) return; const next = [...recipes, { id: Date.now(), name: rName, link: rLink, notes: rNotes, category: rCat, author: currentUser.name }]; setRecipes(next); setRName(""); setRLink(""); setRNotes(""); setShowRecipeForm(false); saveData({ recipes: next }); };
         const deleteRecipe = (id) => { if(confirm("Delete?")) { const next = recipes.filter(r => r.id !== id); setRecipes(next); saveData({ recipes: next }); } };
         
-        // EVENT ACTIONS - Updated with Time
         const addEvent = () => { 
             if(!eventName.trim()) return; 
             const next = [...events, { 
                 id: Date.now(), 
                 title: eventName, 
                 date: eventDate, 
-                time: eventTime, // Save Time
+                time: eventTime, 
                 type: eventType, 
                 author: currentUser.name 
             }]; 
@@ -320,7 +321,6 @@
         const deleteEvent = (id) => { const next = events.filter(e => e.id !== id); setEvents(next); saveData({ events: next }); };
         const openAIHelp = () => { if(!rLink) { alert("Paste a link first!"); return; } const prompt = `${t.aiPrompt} ${rLink}`; navigator.clipboard.writeText(prompt).then(() => { alert("Copied! Opening Gemini..."); window.open(`https://gemini.google.com/app`, '_blank'); }); };
 
-        // SCHEDULE ACTIONS (NEW)
         const addSchedule = () => {
             if(!schDate || !schTimeStart || !schTimeEnd) return;
             const finalType = schPerson === 'Mokka' ? 'Work' : schType;
@@ -350,7 +350,6 @@
         const upcomingEvents = events.filter(e => e.date >= todayKey).sort((a,b) => a.date > b.date ? 1 : -1);
         const nextEvent = upcomingEvents[0];
         
-        // Group Groceries + Calculate Total
         const groceriesByStore = useMemo(() => { 
             const g = {}; 
             STORES.forEach(s => g[s] = []); 
@@ -420,7 +419,7 @@
                                 </div>
                             </div>
 
-                            {/* WORK & SCHOOL SCHEDULE (NEW SECTION) */}
+                            {/* WORK & SCHOOL SCHEDULE */}
                             <div className="card p-5 bg-teal-50/50 border-teal-100 shadow-xl shadow-teal-100/50">
                                 <h3 className="text-xs font-black text-teal-600 uppercase mb-3 ml-1 tracking-widest flex items-center gap-2">
                                     <Icons.Briefcase className="w-4 h-4" /> {t.schedule}
@@ -702,8 +701,10 @@
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="flex-1 flex gap-2">
+                                        {/* QUANTITY INPUT */}
+                                        <input type="number" value={groceryQty} onChange={(e) => setGroceryQty(e.target.value)} placeholder="#" className="w-12 bg-white border-none rounded-2xl px-2 py-3 text-sm font-bold shadow-sm text-center" />
                                         <input type="text" value={groceryInput} onChange={(e) => setGroceryInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGrocery()} placeholder={t.items} className="flex-grow bg-white border-none rounded-2xl px-5 py-3 text-sm font-bold shadow-sm" />
-                                        <input type="number" value={groceryPrice} onChange={(e) => setGroceryPrice(e.target.value)} placeholder="Kr" className="w-20 bg-white border-none rounded-2xl px-3 py-3 text-sm font-bold shadow-sm text-center" />
+                                        <input type="number" value={groceryPrice} onChange={(e) => setGroceryPrice(e.target.value)} placeholder="Kr" className="w-16 bg-white border-none rounded-2xl px-3 py-3 text-sm font-bold shadow-sm text-center" />
                                     </div>
                                     <button onClick={addGrocery} className="bg-blue-500 text-white w-14 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 active:scale-95 transition text-xl font-bold">+</button>
                                 </div>
@@ -721,7 +722,13 @@
                                             {items.map(item => (
                                                 <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 group transition">
                                                     <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition ${item.checked ? 'bg-gray-300 border-gray-300' : 'border-gray-200 bg-white hover:border-blue-400'}`}>{item.checked && <Icons.Check className="w-3 h-3 text-white" />}</button>
-                                                    <span className={`flex-1 text-sm font-bold ${item.checked ? 'text-gray-300 line-through' : 'text-gray-700'}`}>{item.text}</span>
+                                                    
+                                                    {/* QTY + TEXT */}
+                                                    <span className={`flex-1 text-sm font-bold ${item.checked ? 'text-gray-300 line-through' : 'text-gray-700'}`}>
+                                                        {item.qty && item.qty > 1 && <span className="text-blue-500 mr-2">{item.qty}x</span>}
+                                                        {item.text}
+                                                    </span>
+                                                    
                                                     <span className="text-xs font-black text-gray-400">{item.price} kr</span>
                                                     <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                                 </div>
