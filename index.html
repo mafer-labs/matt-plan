@@ -174,6 +174,10 @@
         const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
         const [syncStatus, setSyncStatus] = useState('saved');
         const [weather, setWeather] = useState(null);
+        
+        // Notification State
+        const [appStartTime] = useState(Date.now());
+        const [notifiedIds, setNotifiedIds] = useState(new Set());
 
         // Data
         const [mealData, setMealData] = useState({});
@@ -211,7 +215,7 @@
         const [messageInput, setMessageInput] = useState("");
 
         // Schedule Inputs
-        const [showScheduleForm, setShowScheduleForm] = useState(false); // NEW TOGGLE
+        const [showScheduleForm, setShowScheduleForm] = useState(false);
         const [schPerson, setSchPerson] = useState('Mokka');
         const [schType, setSchType] = useState('Work');
         const [schDate, setSchDate] = useState(formatDateKey(new Date()));
@@ -220,6 +224,20 @@
 
         const timeoutRef = useRef(null);
         const t = DICTIONARY[lang];
+
+        // REQUEST NOTIFICATION PERMISSION
+        useEffect(() => {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }, []);
+
+        // HELPER: SEND NOTIFICATION
+        const sendNotification = (title, body) => {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body, icon: 'https://raw.githubusercontent.com/mafer-labs/matt-plan/main/Logo.jpeg' });
+            }
+        };
 
         useEffect(() => {
             fetch('https://api.open-meteo.com/v1/forecast?latitude=59.91&longitude=10.75&current_weather=true&temperature_unit=celsius')
@@ -241,6 +259,46 @@
                 onValue(ref(database, 'family_data'), (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
+                        // --- NOTIFICATION LOGIC ---
+                        if (currentUser) {
+                            const newNotifiedIds = new Set(notifiedIds);
+                            
+                            // Check Tasks
+                            (data.tasks || []).forEach(item => {
+                                if (item.id > appStartTime && !newNotifiedIds.has(item.id) && item.author !== currentUser.name) {
+                                    sendNotification("New Task", `${item.author} added: ${item.text}`);
+                                    newNotifiedIds.add(item.id);
+                                }
+                            });
+                            
+                            // Check Groceries (Now tracked with author)
+                            (data.groceries || []).forEach(item => {
+                                if (item.id > appStartTime && !newNotifiedIds.has(item.id) && item.author && item.author !== currentUser.name) {
+                                    sendNotification("Groceries", `${item.author} needs: ${item.text}`);
+                                    newNotifiedIds.add(item.id);
+                                }
+                            });
+
+                            // Check Events
+                            (data.events || []).forEach(item => {
+                                if (item.id > appStartTime && !newNotifiedIds.has(item.id) && item.author !== currentUser.name) {
+                                    sendNotification("New Event", `${item.title} (${item.date})`);
+                                    newNotifiedIds.add(item.id);
+                                }
+                            });
+
+                             // Check Messages
+                            (data.messages || []).forEach(item => {
+                                if (item.id > appStartTime && !newNotifiedIds.has(item.id) && item.author !== currentUser.name) {
+                                    sendNotification("Message Wall", `${item.author}: ${item.text}`);
+                                    newNotifiedIds.add(item.id);
+                                }
+                            });
+
+                            setNotifiedIds(newNotifiedIds);
+                        }
+                        // --------------------------
+
                         if (data.meals) setMealData(data.meals);
                         if (data.groceries) setGroceries(data.groceries);
                         if (data.tasks) setTasks(data.tasks);
@@ -251,7 +309,7 @@
                     }
                 });
             } catch (e) { console.error(e); setSyncStatus('error'); }
-        }, []);
+        }, [currentUser]); // Re-run if user logs in to enable notifications
 
         const saveData = (updates) => {
             if (!db) return;
@@ -264,7 +322,12 @@
             }, 500);
         };
 
-        const handleLogin = (user) => { setCurrentUser(user); setTaskAssignees([user.name]); localStorage.setItem('samla_user', JSON.stringify(user)); };
+        const handleLogin = (user) => { 
+            setCurrentUser(user); 
+            setTaskAssignees([user.name]); 
+            localStorage.setItem('samla_user', JSON.stringify(user)); 
+            if ("Notification" in window) Notification.requestPermission();
+        };
         const handleLogout = () => { setCurrentUser(null); localStorage.removeItem('samla_user'); setView('home'); };
 
         // ACTIONS
@@ -281,7 +344,7 @@
 
         const updateMeal = (key, val) => { const next = { ...mealData, [key]: { name: val } }; setMealData(next); saveData({ meals: next }); };
         
-        // SHOPPING ACTIONS
+        // SHOPPING ACTIONS - Now includes AUTHOR
         const addGrocery = () => { 
             if (!groceryInput.trim()) return; 
             const next = [...groceries, { 
@@ -290,6 +353,7 @@
                 price: groceryPrice || '0', 
                 qty: groceryQty || '1', 
                 store: selectedStore, 
+                author: currentUser.name, // NEW: Added Author for Notifications
                 checked: false 
             }]; 
             setGroceries(next); 
@@ -336,7 +400,7 @@
             setSchedules(next);
             setSchTimeStart("");
             setSchTimeEnd("");
-            setShowScheduleForm(false); // Hide after adding
+            setShowScheduleForm(false);
             saveData({ schedules: next });
         };
         const deleteSchedule = (id) => { const next = schedules.filter(s => s.id !== id); setSchedules(next); saveData({ schedules: next }); };
@@ -432,7 +496,6 @@
                                     </button>
                                 </div>
                                 
-                                {/* Collapsible Inputs */}
                                 {showScheduleForm && (
                                     <div className="bg-white p-3 rounded-2xl shadow-sm mb-3 animate-[fadeIn_0.3s]">
                                         <div className="flex gap-2 mb-2">
@@ -461,7 +524,6 @@
                                     </div>
                                 )}
 
-                                {/* Filtered List (Today/Tomorrow) */}
                                 <div className="space-y-2">
                                     {upcomingSchedules.map(s => (
                                         <div key={s.id} className="bg-white p-3 rounded-xl flex justify-between items-center border-l-4 border-teal-300">
@@ -731,10 +793,13 @@
                                             {items.map(item => (
                                                 <div key={item.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 group transition">
                                                     <button onClick={() => toggleGrocery(item.id)} className={`w-6 h-6 rounded-full border-[3px] flex items-center justify-center transition ${item.checked ? 'bg-gray-300 border-gray-300' : 'border-gray-200 bg-white hover:border-blue-400'}`}>{item.checked && <Icons.Check className="w-3 h-3 text-white" />}</button>
+                                                    
+                                                    {/* QTY + TEXT */}
                                                     <span className={`flex-1 text-sm font-bold ${item.checked ? 'text-gray-300 line-through' : 'text-gray-700'}`}>
                                                         {item.qty && item.qty > 1 && <span className="text-blue-500 mr-2">{item.qty}x</span>}
                                                         {item.text}
                                                     </span>
+                                                    
                                                     <span className="text-xs font-black text-gray-400">{item.price} kr</span>
                                                     <button onClick={() => deleteGrocery(item.id)} className="text-gray-300 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition font-bold">✕</button>
                                                 </div>
